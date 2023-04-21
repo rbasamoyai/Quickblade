@@ -126,10 +126,8 @@ function mainRender() {
 		ctx.restore();
 	}
 	
-	ctx.fillStyle = "black";
-	ctx.globalAlpha = 1;
-	ctx.font = "12px Times New Roman";
-	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
+	let debugFillStyle = "black";
+	let debugFont = "12px Times New Roman";
 	
 	if (gameState == RENDER_LEVEL && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
@@ -145,6 +143,19 @@ function mainRender() {
 		ctx.fillStyle = "crimson";
 		ctx.font = "40px Times New Roman";
 		ctx.fillText("YOU DIED", 150, 240);
+		
+		debugFillStyle = "white";
+	}
+	
+	ctx.fillStyle = debugFillStyle;
+	ctx.globalAlpha = 1;
+	ctx.font = debugFont;
+	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
+	if (clientLevel && isControlling()) {
+		let entity = clientLevel.getEntityById(controlledEntity);
+		let x = entity.x.toFixed(3);
+		let y = entity.y.toFixed(3);
+		ctx.fillText(`Position: X=${x} Y=${y}`, 0, 60);
 	}
 	
 	ctx.restore();

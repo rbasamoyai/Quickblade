@@ -10,7 +10,7 @@ export class Monster extends Creature {
 	tick() {
 		let collided = this.level.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collide(e));
 		if (collided) {
-			collided.hurt(1);
+			collided.hurt(1, this);
 		}
 		
 		super.tick();

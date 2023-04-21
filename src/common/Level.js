@@ -25,6 +25,7 @@ export class Level {
 			entity.newPath(); */
 			
 			entity.tick();
+			this.snapshots.push(entity.getUpdateSnapshot());
 		});
 		
 		let startTime = 0;

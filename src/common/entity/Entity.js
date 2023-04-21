@@ -69,8 +69,6 @@ export class Entity {
 			if (flag) this.#pos[1] = 2;
 		}
 		this.move(this.dx, this.dy);
-		
-		this.#level.snapshots.push(this.getUpdateSnapshot());
 	}
 	
 	isOnGround() {
@@ -125,6 +123,8 @@ export class Entity {
 	get dy() { return this.#vel[1]; }
 	setVelocity(vel) { this.#vel = vel; }
 	
+	onJump() {}
+	
 /* 	newPath() {
 		this.#path.clear();
 		this.#path.set(0, this.#vel);
@@ -138,7 +138,7 @@ export class Entity {
 	
 	get type() { return this.#type; }
 	
-	hurt(damage) {
+	hurt(damage, attacker) {
 	}
 
 	kill() {
@@ -148,6 +148,8 @@ export class Entity {
 			id: this.#id
 		});
 	}
+	
+	isInvulnerable(attacker) { return false; }
 	
 	isAlive() { return !this.removed; }
 	
