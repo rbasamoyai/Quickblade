@@ -125,6 +125,10 @@ export class Entity {
 	
 	onJump() {}
 	
+	groundFriction() { return 0; }
+	
+	canControl() { return false; }
+	
 /* 	newPath() {
 		this.#path.clear();
 		this.#path.set(0, this.#vel);
@@ -138,8 +142,7 @@ export class Entity {
 	
 	get type() { return this.#type; }
 	
-	hurt(damage, attacker) {
-	}
+	hurt(damage, attacker) { return false; }
 
 	kill() {
 		this.removed = true;
@@ -150,6 +153,7 @@ export class Entity {
 	}
 	
 	isInvulnerable(attacker) { return false; }
+	isHurt() { return false; }
 	
 	isAlive() { return !this.removed; }
 	

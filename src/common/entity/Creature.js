@@ -15,7 +15,7 @@ export class Creature extends Entity {
 	}
 	
 	tick() {
-		if (this.hurtTime > 0) {
+		if (this.isHurt()) {
 			--this.hurtTime;
 		} else {
 			this.hurtTime = 0;
@@ -44,15 +44,21 @@ export class Creature extends Entity {
 	set maxHp(maxHp) { this.#maxHp = maxHp; }
 	
 	hurt(damage, attacker) {
-		if (this.isInvulnerable(attacker)) return;
+		if (this.isInvulnerable(attacker)) return false;
 		this.#hp = Math.floor(this.#hp - damage);
 		this.hurtTime = DEFAULT_HURT_TIME;
 		if (this.#hp <= 0) {
 			this.kill();
 		}
+		return true;
 	}
 	
-	isInvulnerable(attacker) { return this.hurtTime > 0; }
+	isInvulnerable(attacker) { return this.isHurt(); }
+	isHurt() { return this.hurtTime > 0; }
+	
+	groundFriction() {
+		return this.isHurt() ? 0.6 : super.groundFriction();
+	}
 	
 	getFillStyle() {
 		let f = clamp(this.hurtTime / 15, 0, 1);

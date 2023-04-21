@@ -26,7 +26,7 @@ export default class ServerInputHandler {
 	setEntity(entity) { this.#entity = entity; };
 	
 	tick() {
-		if (!this.#entity) return;
+		if (!this.#entity?.canControl()) return;
 		let max = 0.5;
 		let newVel = [this.#entity.dx, this.#entity.dy];
 		let onGround = this.#entity.isOnGround();
@@ -41,7 +41,7 @@ export default class ServerInputHandler {
 				newVel[1] += this.#queuedJump[1] * k;
 				modified = true;
 			} else if (!this.#leftImp && !this.#rightImp) {
-				newVel[0] = 0;
+				newVel[0] = newVel[0] * this.#entity.groundFriction();
 				modified = true;
 			}
 		}

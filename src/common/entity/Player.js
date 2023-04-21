@@ -27,11 +27,12 @@ export class Player extends Creature {
 	isInvulnerable() { return super.isInvulnerable() || this.#invulnerability > 0; }
 	
 	hurt(damage, attacker) {
-		super.hurt(damage, attacker);
+		if (!super.hurt(damage, attacker)) return false;
 		if (this.#invulnerability > 0) {
 			--this.#invulnerability;
 			this.hurtTime = 5;
 		}
+		return true;
 	}
 	
 	tick() {
@@ -48,6 +49,8 @@ export class Player extends Creature {
 		this.#isAttacking = true;
 		this.#invulnerability = INITIAL_ATTACK_INVUL;
 	}
+	
+	canControl() { return !this.isHurt(); }
 	
 	getFillStyle() {
 		return this.#invulnerability ? "#ffffff" : super.getFillStyle();
