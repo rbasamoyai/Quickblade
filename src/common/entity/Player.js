@@ -1,4 +1,5 @@
 import { Creature } from "./Creature.js";
+import { Monster } from "./Monster.js";
 
 const INITIAL_ATTACK_INVUL = 3;
 
@@ -41,6 +42,10 @@ export class Player extends Creature {
 		if (!this.noGravity && this.isOnGround()) {
 			this.#isAttacking = false;
 			this.#invulnerability = 0;
+		}
+		
+		if (this.#isAttacking) {
+			let collided = this.level.getEntities().filter(e => e instanceof Monster).find(e => this.collide(e));
 		}
 	}
 	

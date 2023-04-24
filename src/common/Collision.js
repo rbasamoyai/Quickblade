@@ -1,4 +1,4 @@
-export default class AABB {
+export class AABB {
 	
 	topLeft;
 	width;
@@ -31,4 +31,8 @@ export default class AABB {
 		return new AABB(this.topLeft[0] + x, this.topLeft[1] + y, this.width, this.height);
 	}
 
+}
+
+export function collide(bb1, bb2, vel1, vel2) {
+	
 }

@@ -1,4 +1,4 @@
-import AABB from "../Collision.js";
+import { AABB } from "../Collision.js";
 
 let COUNTER = 0;
 
@@ -83,19 +83,37 @@ export class Entity {
 		let bb1 = this.getAABB();
 		let bb2 = other.getAABB();
 		
-		let relVel = [1 / Math.abs(other.dx - this.dx), 1 / Math.abs(other.dy - this.dy)];
+		let relVel = [1 / (this.dx - other.dx), 1 / (this.dy - other.dy)];
 		
-		let startX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width) - Math.min(bb1.topLeft[0], bb2.topLeft[0]);
-		let x1 = (startX - bb1.width - bb2.width) * relVel[0];
-		let x2 = startX * relVel[0];
-		if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2) && startX > bb1.width + bb2.width) return false;
+		let startX = bb2.topLeft[0] - bb1.topLeft[0];
+		let x1 = (startX - bb1.width) * relVel[0];
+		let x2 = (startX + bb2.width) * relVel[0];
+		if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2)) {
+			let minX = Math.min(bb1.topLeft[0], bb2.topLeft[0]);
+			let maxX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width);
+			if (maxX - minX > bb1.width + bb2.width) return false;
+		}
+		if (x1 > x2) {
+			let tmp = x1;
+			x1 = x2;
+			x2 = tmp;
+		}
 		x1 = Math.max(0, x1);
 		x2 = Math.min(1, x2);
 		
-		let startY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height) - Math.min(bb1.topLeft[1], bb2.topLeft[1]);
-		let y1 = (startY - bb1.height - bb2.height) * relVel[1];
-		let y2 = startY * relVel[1];
-		if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2) && startY > bb1.height + bb2.height) return false;
+		let startY = bb2.topLeft[1] - bb1.topLeft[1];
+		let y1 = (startY - bb1.height) * relVel[1];
+		let y2 = (startY + bb2.height) * relVel[1];
+		if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2)) {
+			let minY = Math.min(bb1.topLeft[1], bb2.topLeft[1]);
+			let maxY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height);
+			if (maxY - minY > bb1.height + bb2.height) return false;
+		}
+		if (y1 > y2) {
+			let tmp = y1;
+			y1 = y2;
+			y2 = tmp;
+		}
 		y1 = Math.max(0, y1);
 		y2 = Math.min(1, y2);
 		
