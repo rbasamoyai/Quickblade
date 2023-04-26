@@ -54,7 +54,10 @@ export default class ServerInputHandler {
 			modified = true;
 		}
 		
-		if (modified) this.#entity.setVelocity(newVel);
+		if (modified) {
+			this.#entity.setVelocity(newVel);
+			this.#entity.hasImpulse = true;
+		}
 		this.#entity.onJump();
 		this.#queuedJump = null;
 	}

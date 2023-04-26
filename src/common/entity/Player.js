@@ -1,7 +1,10 @@
 import { Creature } from "./Creature.js";
 import { Monster } from "./Monster.js";
+import { AABB } from "../Collision.js";
 
 const INITIAL_ATTACK_INVUL = 3;
+const RANDOM_KNOCKBACK_BOUNDARY = 0.01;
+const KNOCKBACK = 0.5;
 
 export class Player extends Creature {
 	
@@ -46,7 +49,25 @@ export class Player extends Creature {
 		
 		if (this.#isAttacking) {
 			let collided = this.level.getEntities().filter(e => e instanceof Monster).find(e => this.collide(e));
+			if (collided?.hurt(1, this)) {
+				let x = collided.x - this.x;
+				let dy = collided.isOnGround() ? 0.1 : collided.dy;
+				if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
+					collided.setVelocity([-KNOCKBACK, dy]);
+				} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {
+					collided.setVelocity([KNOCKBACK, dy]);
+				} else {
+					let dx = Math.random() > 0.5 ? KNOCKBACK : -KNOCKBACK;
+					collided.setVelocity([dx, dy]);
+				}
+			}
 		}
+	}
+	
+	getHitboxes() {
+		if (!this.#isAttacking) return [];
+		let sx = this.facingRight ? this.x + 0.5 : this.x - 2.5;
+		return [new AABB(sx, this.y - 2, 2, 2)];
 	}
 	
 	onJump() {

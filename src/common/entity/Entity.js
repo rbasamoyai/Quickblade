@@ -1,4 +1,4 @@
-import { AABB } from "../Collision.js";
+import { AABB, collide } from "../Collision.js";
 
 let COUNTER = 0;
 
@@ -17,6 +17,7 @@ export class Entity {
 	noGravity = false;
 	#type;
 	removed = false;
+	facingRight = true;
 	
 	constructor(x, y, level, id, type) {
 		this.#type = type;
@@ -50,7 +51,8 @@ export class Entity {
 			id: this.#id,
 			pos: this.#pos,
 			oldPos: this.#oldPos,
-			vel: this.#vel
+			vel: this.#vel,
+			facingRight: this.facingRight
 		};
 	}
 	
@@ -58,6 +60,7 @@ export class Entity {
 		this.setPos(data.pos);
 		this.setOldPos(data.oldPos);
 		this.setVelocity(data.vel);
+		this.facingRight = data.facingRight;
 	}
 	
 	tick() {
@@ -66,7 +69,9 @@ export class Entity {
 		if (!this.noGravity) {
 			let flag = this.isOnGround();
 			this.#vel[1] = flag && this.dy <= 0.0001 ? 0 : this.dy - 0.02;
-			if (flag) this.#pos[1] = 2;
+			if (flag) {
+				this.#pos[1] = 2;
+			}
 		}
 		this.move(this.dx, this.dy);
 	}
@@ -80,44 +85,25 @@ export class Entity {
 	}
 	
 	collide(other) {
-		let bb1 = this.getAABB();
-		let bb2 = other.getAABB();
+		let hitboxes = this.getHitboxes();
+		let hurtboxes = other.getHurtboxes();
 		
-		let relVel = [1 / (this.dx - other.dx), 1 / (this.dy - other.dy)];
+		let otherVel = [other.dx, other.dy];
 		
-		let startX = bb2.topLeft[0] - bb1.topLeft[0];
-		let x1 = (startX - bb1.width) * relVel[0];
-		let x2 = (startX + bb2.width) * relVel[0];
-		if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2)) {
-			let minX = Math.min(bb1.topLeft[0], bb2.topLeft[0]);
-			let maxX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width);
-			if (maxX - minX > bb1.width + bb2.width) return false;
+		for (const hitbox of hitboxes) {
+			for (const hurtbox of hurtboxes) {
+				if (collide(hitbox, hurtbox, this.#vel, otherVel)) return true;
+			}
 		}
-		if (x1 > x2) {
-			let tmp = x1;
-			x1 = x2;
-			x2 = tmp;
-		}
-		x1 = Math.max(0, x1);
-		x2 = Math.min(1, x2);
-		
-		let startY = bb2.topLeft[1] - bb1.topLeft[1];
-		let y1 = (startY - bb1.height) * relVel[1];
-		let y2 = (startY + bb2.height) * relVel[1];
-		if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2)) {
-			let minY = Math.min(bb1.topLeft[1], bb2.topLeft[1]);
-			let maxY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height);
-			if (maxY - minY > bb1.height + bb2.height) return false;
-		}
-		if (y1 > y2) {
-			let tmp = y1;
-			y1 = y2;
-			y2 = tmp;
-		}
-		y1 = Math.max(0, y1);
-		y2 = Math.min(1, y2);
-		
-		return x1 <= y2 && y1 <= x2; //? Math.max(x1, y1) : -1;
+		return false;
+	}
+	
+	getHitboxes() {
+		return [this.getAABB()];
+	}
+	
+	getHurtboxes() {
+		return [this.getAABB()];
 	}
 	
 	onCollideEntity(other) {
@@ -177,11 +163,20 @@ export class Entity {
 	
 	render(ctx, dt) {
 		ctx.globalAlpha = 0.5;
+		
+		ctx.fillStyle = "#009f00";
+		let hitboxes = this.getHitboxes();
+		for (const bb of hitboxes) {
+			ctx.fillRect(bb.topLeft[0] - this.x, bb.topLeft[1] - this.y + bb.height, bb.width, bb.height);
+		}
+		
 		ctx.fillStyle = this.getFillStyle();
+		let hurtboxes = this.getHurtboxes();
+		for (const bb of hurtboxes) {
+			ctx.fillRect(bb.topLeft[0] - this.x, bb.topLeft[1] - this.y + bb.height, bb.width, bb.height);
+		}
 		
-		ctx.fillRect(-this.#width / 2, 0, this.#width, this.#height);
-		
-		ctx.fillStyle = "#00FF00";
+		ctx.fillStyle = "#00ff00";
 		ctx.globalAlpha = 1;
 		
 		ctx.beginPath();
@@ -189,7 +184,7 @@ export class Entity {
 		ctx.fill();
 	}
 	
-	getFillStyle() { return "#FF9f9f"; }
+	getFillStyle() { return "#ff9f9f"; }
 	
 	displacement(dt) {
 		/* let sx = this.x;

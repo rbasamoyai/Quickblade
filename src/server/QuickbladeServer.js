@@ -36,16 +36,16 @@ onmessage = evt => {
 };
 
 function mainloop() {
-	let startMs = new Date().getTime();
+	let startMs = Date.now();
 	input.tick();
 	if (serverLevel) {
 		serverLevel.tick();	
 	}
-	while (new Date().getTime() - startMs < TICK_TARGET) {}
+	while (Date.now() - startMs < TICK_TARGET) {}
 	if (serverLevel) {
 		postMessage({
 			type: "qb:update_client",
-			time: new Date().getTime(),
+			time: Date.now(),
 			entityData: serverLevel.snapshots
 		});
 		serverLevel.snapshots.splice(0, serverLevel.snapshots.length);

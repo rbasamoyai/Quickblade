@@ -25,7 +25,10 @@ export class Level {
 			entity.newPath(); */
 			
 			entity.tick();
-			this.snapshots.push(entity.getUpdateSnapshot());
+			if (!entity.removed) this.snapshots.push(entity.getUpdateSnapshot());
+		});
+		this.#loaded.forEach((entity, id, m) => {
+			if (entity.removed) this.#loaded.delete(id);
 		});
 		
 		let startTime = 0;

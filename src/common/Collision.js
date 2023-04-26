@@ -34,5 +34,39 @@ export class AABB {
 }
 
 export function collide(bb1, bb2, vel1, vel2) {
+	let relVel = [1 / (vel1[0] - vel2[0]), 1 / (vel1[1] - vel2[1])];
+		
+	let startX = bb2.topLeft[0] - bb1.topLeft[0];
+	let x1 = (startX - bb1.width) * relVel[0];
+	let x2 = (startX + bb2.width) * relVel[0];
+	if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2)) {
+		let minX = Math.min(bb1.topLeft[0], bb2.topLeft[0]);
+		let maxX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width);
+		if (maxX - minX > bb1.width + bb2.width) return false;
+	}
+	if (x1 > x2) {
+		let tmp = x1;
+		x1 = x2;
+		x2 = tmp;
+	}
+	x1 = Math.max(0, x1);
+	x2 = Math.min(1, x2);
 	
+	let startY = bb2.topLeft[1] - bb1.topLeft[1];
+	let y1 = (startY - bb1.height) * relVel[1];
+	let y2 = (startY + bb2.height) * relVel[1];
+	if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2)) {
+		let minY = Math.min(bb1.topLeft[1], bb2.topLeft[1]);
+		let maxY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height);
+		if (maxY - minY > bb1.height + bb2.height) return false;
+	}
+	if (y1 > y2) {
+		let tmp = y1;
+		y1 = y2;
+		y2 = tmp;
+	}
+	y1 = Math.max(0, y1);
+	y2 = Math.min(1, y2);
+	
+	return x1 <= y2 && y1 <= x2; //? Math.max(x1, y1) : -1;
 }

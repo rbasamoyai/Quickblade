@@ -75,7 +75,7 @@ worker.onerror = err => {
 let stopped = false;
 
 function mainRender() {
-	let curMs = new Date().getTime();
+	let curMs = Date.now();
 	let dt = (curMs - lastTickMs) * TICK_DT;
 	
 	ctx.clearRect(0, 0, screen.width, screen.height);
@@ -198,6 +198,11 @@ document.oncontextmenu = evt => {
 	inputFlags = 0;
 	updateKbInput();
 };
+
+document.onmousedown = evt => {
+	if (evt.target.id === "gameCanvas" && evt.detail > 1) evt.preventDefault();
+};
+
 
 canvas.onmousemove = evt => {
 	mouseX = evt.offsetX / canvas.width;

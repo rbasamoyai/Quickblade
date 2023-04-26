@@ -7,6 +7,7 @@ export class Creature extends Entity {
 	#hp;
 	#maxHp;
 	hurtTime = 0;
+	hasImpulse = false;
 	
 	constructor(x, y, level, id, type) {
 		super(x, y, level, id, type);
@@ -21,6 +22,16 @@ export class Creature extends Entity {
 			this.hurtTime = 0;
 		}
 		super.tick();
+
+		if (this.dx < 0) {
+			this.facingRight = false;
+		} else if (this.dx > 0) {
+			this.facingRight = true;
+		}
+		if (!this.noGravity && this.isOnGround() && !this.hasImpulse) {
+			this.setVelocity([this.dx * this.groundFriction(), this.dy]);
+		}
+		this.hasImpulse = false;
 	}
 	
 	getUpdateSnapshot() {
