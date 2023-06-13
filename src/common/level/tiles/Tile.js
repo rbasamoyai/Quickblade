@@ -4,9 +4,8 @@ export class Tile extends ImageResource {
 	
 	#canCollide;
 	#noRender;
-	#id;
 	
-	constructor(properties, id) {
+	constructor(properties) {
 		super(properties.textureV);
 		this.#canCollide = properties.canCollideV;
 		this.#noRender = properties.noRenderV;

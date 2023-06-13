@@ -1,8 +1,19 @@
 import { Entity } from "../entity/Entity.js";
 import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
+import { LevelChunk, CHUNK_SIZE } from "./LevelChunk.js";
 
 const MAX_ITERS = 6;
+
+function makeChunkTest(x, y) {
+	let chunk = new LevelChunk(x, y);
+	for (let ty = 0; ty < 2; ++ty) {
+		for (let tx = 0; tx < CHUNK_SIZE; ++tx) {
+			chunk.setTile(tx, ty, QBTiles.BLOCK);
+		}
+	}
+	return chunk;
+}
 
 export class Level {
 
@@ -12,7 +23,10 @@ export class Level {
 	snapshots = [];
 	
 	constructor(cs) {
-		this.chunks = cs;
+		this.#chunks = cs;
+		this.#chunks.push(makeChunkTest(-1, 0));
+		this.#chunks.push(makeChunkTest(0, 0));
+		this.#chunks.push(makeChunkTest(1, 0));
 	}
 	
 	tick() {
@@ -154,27 +168,21 @@ export class Level {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
 		
-		let curX = -16;
+		let curCX = -1;
+		let curCY = -1;
 		if (this.#camera) {
 			this.#camera.lerp(ctx, dt);
-			curX = Math.floor(this.#camera.x / 16) * 16 - 16;
+			curCX = Math.floor(this.#camera.x / CHUNK_SIZE) - 1;
+			curCY = Math.floor(this.#camera.y / CHUNK_SIZE) - 1;
 		}
 		
-		ctx.save();
-		ctx.transform(1, 0, 0, -1, curX, 2);
-		
-		for (let i = 0; i < 48; ++i) {
+		for (const chunk of this.#chunks) {
+			if (!chunkInRange(chunk, curCX, curCY)) continue;
 			ctx.save();
-			for (let j = 0; j < 7; ++j) {
-				QBTiles.BLOCK.render(ctx);
-				ctx.translate(0, 1);
-			}
+			ctx.transform(1, 0, 0, 1, chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE);
+			chunk.render(ctx, dt);
 			ctx.restore();
-			
-			ctx.translate(1, 0);
 		}
-		
-		ctx.restore();
 		
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
@@ -187,4 +195,8 @@ export class Level {
 	
 	setCamera(camera) { this.#camera = camera; }
 
+}
+
+function chunkInRange(chunk, curCX, curCY) {
+	return curCX <= chunk.x && chunk.x < curCX + 3 && curCY <= chunk.y && chunk.y < curCY + 3;
 }
