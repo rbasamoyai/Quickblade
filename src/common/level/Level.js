@@ -1,5 +1,6 @@
-import { Entity } from "./entity/Entity.js";
-import * as QBEntities from "./index/QBEntities.js";
+import { Entity } from "../entity/Entity.js";
+import * as QBEntities from "../index/QBEntities.js";
+import * as QBTiles from "../index/QBTiles.js";
 
 const MAX_ITERS = 6;
 
@@ -152,11 +153,28 @@ export class Level {
 	render(ctx, dt) {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
-
-		if (this.#camera) this.#camera.lerp(ctx, dt);
 		
-		ctx.fillStyle = "#7f7f7f";
-		ctx.fillRect(0, 0, 16, 2);
+		let curX = -16;
+		if (this.#camera) {
+			this.#camera.lerp(ctx, dt);
+			curX = Math.floor(this.#camera.x / 16) * 16 - 16;
+		}
+		
+		ctx.save();
+		ctx.transform(1, 0, 0, -1, curX, 2);
+		
+		for (let i = 0; i < 48; ++i) {
+			ctx.save();
+			for (let j = 0; j < 7; ++j) {
+				QBTiles.BLOCK.render(ctx);
+				ctx.translate(0, 1);
+			}
+			ctx.restore();
+			
+			ctx.translate(1, 0);
+		}
+		
+		ctx.restore();
 		
 		for (const entity of this.#loaded.values()) {
 			ctx.save();

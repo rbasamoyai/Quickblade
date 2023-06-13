@@ -1,6 +1,9 @@
 import ServerInputHandler from "./ServerInputHandler.js";
-import { Level } from "../common/Level.js";
+import { Level } from "../common/level/Level.js";
+
 import * as QBEntities from "../common/index/QBEntities.js";
+import * as QBTiles from "../common/index/QBTiles.js";
+
 const serverLevel = new Level([]);
 
 const input = new ServerInputHandler();

@@ -12,15 +12,23 @@ if (!window.Worker) {
 const TICK_DT = 1 / 33;
 const SCALE = 32;
 
-import { Level } from "../common/Level.js";
+import { Level } from "../common/level/Level.js";
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
+import { LevelGenerator } from "../common/level/LevelGeneration.js";
+
+import "../common/index/QBEntities.js";
+import "../common/index/QBTiles.js";
 
 const RANDOM = new QBRandom(null);
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothEnabled = false;
+
+let levelGenerator = new LevelGenerator(1);
+levelGenerator.generateLevel();
 
 let clientLevel = new Level([]);
 const camera = new Camera()
