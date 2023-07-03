@@ -18,16 +18,16 @@ export class LevelChunk {
 		}
 	}
 	
-	#validateChunkPos(cx, cy) {
-		return 0 <= cx && cx < CHUNK_SIZE && 0 <= cy && cy < CHUNK_SIZE;
+	#validateChunkPos(tx, ty) {
+		return 0 <= tx && tx < CHUNK_SIZE && 0 <= ty && ty < CHUNK_SIZE;
 	}
 	
-	getTile(cx, cy) {
-		return this.#validateChunkPos(cx, cy) ? this.#tiles[cy][cx] : QBTiles.AIR;
+	getTile(tx, ty) {
+		return this.#validateChunkPos(tx, ty) ? this.#tiles[ty][tx] : QBTiles.AIR;
 	}
 	
-	setTile(cx, cy, tile) {
-		if (this.#validateChunkPos(cx, cy)) this.#tiles[cy][cx] = QBTiles.getIdNum(tile);
+	setTile(tx, ty, tile) {
+		if (this.#validateChunkPos(tx, ty)) this.#tiles[ty][tx] = QBTiles.getIdNum(tile);
 	}
 	
 	render(ctx, dt) {
@@ -55,6 +55,12 @@ export class LevelChunk {
 	
 }
 
-export function getChunkPos(x, y) {
-	return [x % CHUNK_SIZE, y % CHUNK_SIZE];
+export function getChunkPos(x, y) { return [toChunkCoord(x), toChunkCoord(y)]; }
+export funciton toChunkCoord(v) { return v % CHUNK_SIZE; }
+
+export function getChunkSection(x, y) { return [toChunkSection(x), toChunkSection(y)]; }
+export function toChunkSection(v) { return Math.floor(v / CHUNK_SIZE); }
+
+export function chunkInRange(chunk, startX, startY, endX, endY) {
+	return startX <= chunk.x && chunk.x <= endX  && startY <= chunk.y && chunk.y < endY;
 }

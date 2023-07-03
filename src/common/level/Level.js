@@ -177,7 +177,7 @@ export class Level {
 		}
 		
 		for (const chunk of this.#chunks) {
-			if (!chunkInRange(chunk, curCX, curCY)) continue;
+			if (!chunkInRange(chunk, curCX, curCY, curCX + 2, curCY + 2)) continue;
 			ctx.save();
 			ctx.transform(1, 0, 0, 1, chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE);
 			chunk.render(ctx, dt);
@@ -195,8 +195,4 @@ export class Level {
 	
 	setCamera(camera) { this.#camera = camera; }
 
-}
-
-function chunkInRange(chunk, curCX, curCY) {
-	return curCX <= chunk.x && chunk.x < curCX + 3 && curCY <= chunk.y && chunk.y < curCY + 3;
 }
