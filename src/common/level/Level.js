@@ -1,19 +1,9 @@
 import { Entity } from "../entity/Entity.js";
 import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
-import { LevelChunk, CHUNK_SIZE, chunkInRange } from "./LevelChunk.js";
+import * as LevelChunk from "./LevelChunk.js";
 
 const MAX_ITERS = 6;
-
-function makeChunkTest(x, y) {
-	let chunk = new LevelChunk(x, y);
-	for (let ty = 0; ty < 2; ++ty) {
-		for (let tx = 0; tx < CHUNK_SIZE; ++tx) {
-			chunk.setTile(tx, ty, QBTiles.BLOCK);
-		}
-	}
-	return chunk;
-}
 
 export class Level {
 
@@ -24,9 +14,6 @@ export class Level {
 	
 	constructor(cs) {
 		this.#chunks = cs;
-		//this.#chunks.push(makeChunkTest(-1, 0));
-		//this.#chunks.push(makeChunkTest(0, 0));
-		//this.#chunks.push(makeChunkTest(1, 0));
 	}
 	
 	tick() {
@@ -172,14 +159,14 @@ export class Level {
 		let curCY = -1;
 		if (this.#camera) {
 			this.#camera.lerp(ctx, dt);
-			curCX = Math.floor(this.#camera.x / CHUNK_SIZE) - 1;
-			curCY = Math.floor(this.#camera.y / CHUNK_SIZE) - 1;
+			curCX = LevelChunk.toChunkSection(this.#camera.x) - 1;
+			curCY = LevelChunk.toChunkSection(this.#camera.y) - 1;
 		}
 		
 		for (const chunk of this.#chunks) {
-			if (!chunkInRange(chunk, curCX, curCY, curCX + 2, curCY + 2)) continue;
+			if (!LevelChunk.chunkInRange(chunk, curCX, curCY, curCX + 3, curCY + 3)) continue;
 			ctx.save();
-			ctx.transform(1, 0, 0, 1, chunk.x * CHUNK_SIZE, chunk.y * CHUNK_SIZE);
+			ctx.transform(1, 0, 0, 1, chunk.x * LevelChunk.CHUNK_SIZE, chunk.y * LevelChunk.CHUNK_SIZE);
 			chunk.render(ctx, dt);
 			ctx.restore();
 		}
