@@ -7,12 +7,13 @@ export class LevelChunk {
 	#tiles = [];
 	#pos;
 	
-	constructor(x, y) {
+	constructor(x, y, tile = QBTiles.AIR) {
 		this.#pos = [x, y];
+		let padId = QBTiles.getIdNum(tile);
 		for (let i = 0; i < CHUNK_SIZE; ++i) {
 			let row = [];
 			for (let j = 0; j < CHUNK_SIZE; ++j) {
-				row.push(0);
+				row.push(padId);
 			}
 			this.#tiles.push(row);
 		}
@@ -56,7 +57,7 @@ export class LevelChunk {
 }
 
 export function getChunkPos(x, y) { return [toChunkCoord(x), toChunkCoord(y)]; }
-export funciton toChunkCoord(v) { return v % CHUNK_SIZE; }
+export function toChunkCoord(v) { return v % CHUNK_SIZE; }
 
 export function getChunkSection(x, y) { return [toChunkSection(x), toChunkSection(y)]; }
 export function toChunkSection(v) { return Math.floor(v / CHUNK_SIZE); }

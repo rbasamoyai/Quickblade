@@ -22,10 +22,18 @@ export default class QBRandom {
 		return this.next() % dx + start; 
 	}
 	
-	static #MAX_UINT = (2**32 - 1) >>> 0;
+	static #MAX_UINT_RECIP = 1 / (2**32 - 1) >>> 0;
 	
-	nextFloat() {
-		return this.next() / QBRandom.#MAX_UINT;
+	nextFloat() { return this.next() * QBRandom.#MAX_UINT_RECIP; }
+	
+	// Taken from https://stackoverflow.com/a/36481059.
+	nextGaussian(mean = 0, stddev = 1) {
+		const u = 1 - this.nextFloat();
+		const v = this.nextFloat();
+		const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+		return z * stddev + mean;
 	}
+	
+	nextBoolean() { return this.next() % 2 == 0; }
 
 }

@@ -27,10 +27,9 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
 
-let levelGenerator = new LevelGenerator(1);
-levelGenerator.generateLevel();
+const levelGenerator = new LevelGenerator(1);
+const clientLevel = levelGenerator.generateLevel();
 
-let clientLevel = new Level([]);
 const camera = new Camera()
 clientLevel.setCamera(camera);
 
@@ -192,6 +191,7 @@ document.onkeydown = evt => {
 	if (evt.code === "KeyA") inputFlags |= 1; // Left
 	if (evt.code === "KeyD") inputFlags |= 2; // Right
 	if (evt.code === "KeyW") inputFlags |= 4; // Up
+	if (evt.code === "KeyS") inputFlags |= 8; // Down
 	updateKbInput();
 };
 
@@ -199,6 +199,7 @@ document.onkeyup = evt => {
 	if (evt.code === "KeyA") inputFlags &= ~1; // Left
 	if (evt.code === "KeyD") inputFlags &= ~2; // Right
 	if (evt.code === "KeyW") inputFlags &= ~4; // Up
+	if (evt.code === "KeyS") inputFlags &= ~8; // Down
 	updateKbInput();
 };
 

@@ -1,7 +1,7 @@
 import { Entity } from "../entity/Entity.js";
 import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
-import { LevelChunk, CHUNK_SIZE } from "./LevelChunk.js";
+import { LevelChunk, CHUNK_SIZE, chunkInRange } from "./LevelChunk.js";
 
 const MAX_ITERS = 6;
 
@@ -24,9 +24,9 @@ export class Level {
 	
 	constructor(cs) {
 		this.#chunks = cs;
-		this.#chunks.push(makeChunkTest(-1, 0));
-		this.#chunks.push(makeChunkTest(0, 0));
-		this.#chunks.push(makeChunkTest(1, 0));
+		//this.#chunks.push(makeChunkTest(-1, 0));
+		//this.#chunks.push(makeChunkTest(0, 0));
+		//this.#chunks.push(makeChunkTest(1, 0));
 	}
 	
 	tick() {

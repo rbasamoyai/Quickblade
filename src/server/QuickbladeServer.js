@@ -4,22 +4,26 @@ import { Level } from "../common/level/Level.js";
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
-const serverLevel = new Level([]);
+import { LevelGenerator } from "../common/level/LevelGeneration.js";
+
+const levelGenerator = new LevelGenerator(1);
+const serverLevel = levelGenerator.generateLevel();
 
 const input = new ServerInputHandler();
 
 let updateControl = null;
 
 let controlledEntity = QBEntities.PLAYER.create(4, 2, serverLevel);
+controlledEntity.noGravity = true;
 serverLevel.addTicked(controlledEntity);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 
 input.setEntity(controlledEntity);
 updateControl = controlledEntity.id;
 
-let otherEntity = QBEntities.IMP.create(8, 2, serverLevel);
-serverLevel.addTicked(otherEntity);
-serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+//let otherEntity = QBEntities.IMP.create(8, 2, serverLevel);
+//serverLevel.addTicked(otherEntity);
+//serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 
 const TICK_TARGET = 30;
 

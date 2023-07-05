@@ -6,6 +6,7 @@ export default class ServerInputHandler {
 	#leftImp = false;
 	#rightImp = false;
 	#upImp = false;
+	#downImp = false;
 	#entity = null;
 	#queuedJump = null;
 	
@@ -16,10 +17,11 @@ export default class ServerInputHandler {
 		this.#leftImp = msg & 1;
 		this.#rightImp = msg & 2;
 		this.#upImp = msg & 4;
+		this.#downImp = msg & 8;
 	}
 	
 	handleJump(vec) {
-		if (this.#queuedJump) return;
+		if (this.#queuedJump || !this.#entity || this.#entity.noGravity) return;
 		this.#queuedJump = vec;
 	}
 	
@@ -30,7 +32,8 @@ export default class ServerInputHandler {
 		let max = 0.5;
 		let newVel = [this.#entity.dx, this.#entity.dy];
 		let onGround = this.#entity.isOnGround();
-		let cdx = onGround ? 0.05 : 0.025;
+		let flying = this.#entity.noGravity;
+		let cdx = onGround || flying ? 0.05 : 0.025;
 		let modified = false;
 		
 		if (onGround) {
@@ -53,6 +56,25 @@ export default class ServerInputHandler {
 			newVel[0] = this.#entity.dx < 0 && onGround ? 0 : this.#entity.dx < max ? Math.min(max, this.#entity.dx + cdx) : this.#entity.dx;
 			modified = true;
 		}
+		
+		if (flying) {
+			if (this.#leftImp && !this.#rightImp) {
+				newVel[0] = -0.5;
+			} else if (!this.#leftImp && this.#rightImp) {
+				newVel[0] = 0.5;
+			} else {
+				newVel[0] = 0;
+			}
+			if (this.#upImp && !this.#downImp) {
+				newVel[1] = 0.5;
+			} else if (!this.#upImp && this.#downImp) {
+				newVel[1] = -0.5;
+			} else {
+				newVel[1] = 0;
+			}
+			modified = true;
+		}
+		
 		
 		if (modified) {
 			this.#entity.setVelocity(newVel);

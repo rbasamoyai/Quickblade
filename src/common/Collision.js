@@ -10,13 +10,21 @@ export class AABB {
 		this.height = h;
 	}
 	
-	collideBox(other) {
+	collideBox(other) {	
+		return this.intersectionXOf(other) <= this.width + other.width
+			&& this.intersectionYOf(other) <= this.height + other.height;
+	}
+	
+	intersectionXOf(other) {
 		let minX = Math.min(this.topLeft[0], other.topLeft[0]);
 		let maxX = Math.max(this.topLeft[0] + this.width, other.topLeft[0] + other.width);
+		return maxX - minX;
+	}
+	
+	intersectionYOf(other) {
 		let minY = Math.min(this.topLeft[1], other.topLeft[1]);
 		let maxY = Math.max(this.topLeft[1] + this.height, other.topLeft[1] + other.height);
-		
-		return maxX - minX <= this.width + other.width && maxY - minY <= this.height + other.height;
+		return maxY - minY;
 	}
 	
 	expandTowards(ex, ey) {
