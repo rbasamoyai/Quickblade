@@ -11,9 +11,31 @@ export class Level {
 	#loaded = new Map();
 	#camera;
 	snapshots = [];
+	#topLeft;
+	#dimensions;
 	
 	constructor(cs) {
 		this.#chunks = cs;
+		
+		let minX;
+		let minY;
+		let maxX;
+		let maxY;
+		
+		for (const chunk of this.#chunks) {
+			if (!minX || chunk.x < minX) minX = chunk.x;
+			if (!minY || chunk.y < minY) minY = chunk.y;
+			if (!maxX || chunk.x > maxX) maxX = chunk.x;
+			if (!maxY || chunk.y > maxY) maxY = chunk.y;
+		}
+		
+		if (!minX || !minY || !maxX || !maxY) {
+			this.#topLeft = [0, 0];
+			this.#dimensions = [0, 0];
+		} else {
+			this.#topLeft = [minX, minY];
+			this.#dimensions = [maxX - minX + 1, maxY - minY + 1];
+		}
 	}
 	
 	tick() {
@@ -178,6 +200,36 @@ export class Level {
 			entity.render(ctx, dt);
 			ctx.restore();
 		}
+	}
+	
+	renderMinimap(ctx, dt) {
+		ctx.fillStyle = "black";
+		
+		ctx.save();
+		ctx.scale(4, 4);
+		
+		ctx.translate(-this.#dimensions[0] - 2, 0);
+		
+		ctx.fillRect(0, 0, this.#dimensions[0] + 2, this.#dimensions[1] + 2);
+		
+		for (const chunk of this.#chunks) {			
+			ctx.fillStyle = "white";
+			if (this.#camera) {
+				let d = this.#camera.displacement(dt);
+				if (chunk.x === LevelChunk.toChunkSection(d[0]) && chunk.y === LevelChunk.toChunkSection(d[1]))
+					ctx.fillStyle = "red";
+			}
+			
+			let x = chunk.x - this.#topLeft[0];
+			let y = chunk.y - this.#topLeft[1];
+			
+			ctx.save();
+			ctx.translate(x + 1, this.#dimensions[1] - y);
+			ctx.fillRect(0, 0, 1, 1);
+			ctx.restore();
+		}
+		
+		ctx.restore();
 	}
 	
 	setCamera(camera) { this.#camera = camera; }

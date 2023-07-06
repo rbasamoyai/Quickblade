@@ -85,7 +85,7 @@ function mainRender() {
 	let curMs = Date.now();
 	let dt = (curMs - lastTickMs) * TICK_DT;
 	
-	ctx.clearRect(0, 0, screen.width, screen.height);
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
 	ctx.save();
 	
@@ -130,6 +130,11 @@ function mainRender() {
 		}
 		ctx.restore();
 		
+		ctx.restore();
+		
+		ctx.save();
+		ctx.translate(canvas.width, 0);
+		clientLevel.renderMinimap(ctx, dt);
 		ctx.restore();
 	}
 	
