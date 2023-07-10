@@ -17,24 +17,24 @@ export class Level {
 	constructor(cs) {
 		this.#chunks = cs;
 		
-		let minX;
-		let minY;
-		let maxX;
-		let maxY;
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
 		
 		for (const chunk of this.#chunks) {
-			if (!minX || chunk.x < minX) minX = chunk.x;
-			if (!minY || chunk.y < minY) minY = chunk.y;
-			if (!maxX || chunk.x > maxX) maxX = chunk.x;
-			if (!maxY || chunk.y > maxY) maxY = chunk.y;
+			minX = Math.min(minX, chunk.x);
+			minY = Math.min(minY, chunk.y);
+			maxX = Math.max(maxX, chunk.x);
+			maxY = Math.max(maxY, chunk.y);
 		}
 		
-		if (!minX || !minY || !maxX || !maxY) {
-			this.#topLeft = [0, 0];
-			this.#dimensions = [0, 0];
-		} else {
+		if (Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY)) {
 			this.#topLeft = [minX, minY];
 			this.#dimensions = [maxX - minX + 1, maxY - minY + 1];
+		} else {
+			this.#topLeft = [0, 0];
+			this.#dimensions = [0, 0];
 		}
 	}
 	

@@ -16,7 +16,7 @@ import { Level } from "../common/level/Level.js";
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
-import { LevelGenerator } from "../common/level/LevelGeneration.js";
+import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
 import "../common/index/QBEntities.js";
 import "../common/index/QBTiles.js";

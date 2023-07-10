@@ -58,7 +58,7 @@ export class LevelChunk {
 
 export function getChunkPos(x, y) { return [toChunkCoord(x), toChunkCoord(y)]; }
 
-export function toChunkCoord(v) { return v < 0 ? CHUNK_SIZE + v % CHUNK_SIZE : v % CHUNK_SIZE; }
+export function toChunkCoord(v) { return v < 0 ? (CHUNK_SIZE + v % CHUNK_SIZE) % CHUNK_SIZE : v % CHUNK_SIZE; }
 
 export function getChunkSection(x, y) { return [toChunkSection(x), toChunkSection(y)]; }
 export function toChunkSection(v) { return Math.floor(v / CHUNK_SIZE); }

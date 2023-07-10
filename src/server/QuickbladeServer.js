@@ -4,7 +4,7 @@ import { Level } from "../common/level/Level.js";
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
-import { LevelGenerator } from "../common/level/LevelGeneration.js";
+import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
 const levelGenerator = new LevelGenerator(1);
 const serverLevel = levelGenerator.generateLevel();
