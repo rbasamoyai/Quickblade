@@ -233,5 +233,7 @@ export class Level {
 	}
 	
 	setCamera(camera) { this.#camera = camera; }
+	
+	getAllChunks() { return this.#chunks; }
 
 }

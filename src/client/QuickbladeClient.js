@@ -13,47 +13,56 @@ const TICK_DT = 1 / 33;
 const SCALE = 32;
 
 import { Level } from "../common/level/Level.js";
+import { LevelChunk } from "../common/level/LevelChunk.js";
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
 import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
-import "../common/index/QBEntities.js";
-import "../common/index/QBTiles.js";
-
-const RANDOM = new QBRandom(null);
+import * as QBEntities from "../common/index/QBEntities.js";
+import * as QBTiles from "../common/index/QBTiles.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
 
-const levelGenerator = new LevelGenerator(1);
-const clientLevel = levelGenerator.generateLevel();
+const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
-const camera = new Camera()
-clientLevel.setCamera(camera);
+const RANDOM = new QBRandom(null);
 
 const RENDER_LEVEL = 0;
 const RENDER_DEATH_SCREEN = 1;
+const RENDER_LOADING_SCREEN = 2;
 
-let gameState = RENDER_LEVEL;
-
+const camera = new Camera();
+let gameState = RENDER_LOADING_SCREEN;
 let controlledEntity = null;
 
-let inputFlags = 0;
-
-let inputMode = "jump";
-let mouseX = 0;
-let mouseY = 0;
-let tracked = null;
-
-let lastFrameMs = new Date().getTime();
-let lastTickMs = new Date().getTime();
-
-const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
+let expectedChunkCount = -1;
+let loadChunks = [];
+let clientLevel = null;
 
 worker.onmessage = evt => {
 	switch (evt.data.type) {
+		case "qb:expected_chunk_count": {
+			expectedChunkCount = evt.data.count;
+			gameState = RENDER_LOADING_SCREEN;
+			console.log(`Loading ${expectedChunkCount} chunks...`)
+			break;
+		}
+		case "qb:load_chunk": {
+			loadChunks.push(new LevelChunk(evt.data.x, evt.data.y, QBTiles.AIR, evt.data.tiles));
+			if (expectedChunkCount === loadChunks.length) {
+				clientLevel = new Level(loadChunks);
+				clientLevel.setCamera(camera);
+				expectedChunkCount = -1;
+				loadChunks = [];
+				gameState = RENDER_LEVEL;
+				console.log("Client is ready.")
+				worker.postMessage({ type: "qb:client_ready" });
+			}
+			break;
+		}
 		case "qb:update_client": {
 			lastTickMs = evt.data.time;
 			if (clientLevel) clientLevel.loadEntities(evt.data.entityData);
@@ -64,6 +73,7 @@ worker.onmessage = evt => {
 		}
 		case "qb:update_controlled_entity": {
 			controlledEntity = evt.data.id;
+			console.log(`Set controller to entity id ${controlledEntity}.`);
 			break;
 		}
 		case "qb:player_dead": {
@@ -78,6 +88,16 @@ worker.onmessage = evt => {
 worker.onerror = err => {
 	console.log(`Caught error from worker thread: ${err.message}`);
 };
+
+let inputFlags = 0;
+
+let inputMode = "jump";
+let mouseX = 0;
+let mouseY = 0;
+let tracked = null;
+
+let lastFrameMs = new Date().getTime();
+let lastTickMs = new Date().getTime();
 
 let stopped = false;
 
@@ -145,16 +165,28 @@ function mainRender() {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		if (entity instanceof Creature) {
 			ctx.font = "20px Times New Roman";
+			ctx.textAlign = "left";
 			ctx.fillText(`HP: ${entity.hp} / ${entity.maxHp}`, 0, 450);
 		}
 	}
 	if (gameState == RENDER_DEATH_SCREEN) {
 		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, screen.width, screen.height);
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		
 		ctx.fillStyle = "crimson";
 		ctx.font = "40px Times New Roman";
-		ctx.fillText("YOU DIED", 150, 240);
+		ctx.textAlign = "center";
+		ctx.fillText("YOU DIED", canvas.width / 2, 240);
+		
+		debugFillStyle = "white";
+	} else if (gameState == RENDER_LOADING_SCREEN) {
+		ctx.fillStyle = "black";
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		
+		ctx.fillStyle = "white";
+		ctx.font = "40px Times New Roman";
+		ctx.textAlign = "center";
+		ctx.fillText("Loading...", canvas.width / 2, 240);
 		
 		debugFillStyle = "white";
 	}
@@ -162,6 +194,7 @@ function mainRender() {
 	ctx.fillStyle = debugFillStyle;
 	ctx.globalAlpha = 1;
 	ctx.font = debugFont;
+	ctx.textAlign = "left";
 	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
 	if (clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);

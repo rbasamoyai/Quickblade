@@ -7,15 +7,28 @@ export class LevelChunk {
 	#tiles = [];
 	#pos;
 	
-	constructor(x, y, tile = QBTiles.AIR) {
+	constructor(x, y, tile = QBTiles.AIR, tiles) {
 		this.#pos = [x, y];
-		let padId = QBTiles.getIdNum(tile);
-		for (let i = 0; i < CHUNK_SIZE; ++i) {
-			let row = [];
-			for (let j = 0; j < CHUNK_SIZE; ++j) {
-				row.push(padId);
+		
+		if (tiles) {
+			this.#tiles = [];
+			let k = 0;
+			for (let i = 0; i < CHUNK_SIZE; ++i) {
+				let row = [];
+				for (let j = 0; j < CHUNK_SIZE; ++j) {
+					row.push(tiles[k++]);
+				}
+				this.#tiles.push(row);
 			}
-			this.#tiles.push(row);
+		} else {	
+			let padId = QBTiles.getIdNum(tile);
+			for (let i = 0; i < CHUNK_SIZE; ++i) {
+				let row = [];
+				for (let j = 0; j < CHUNK_SIZE; ++j) {
+					row.push(padId);
+				}
+				this.#tiles.push(row);
+			}
 		}
 	}
 	
@@ -53,6 +66,19 @@ export class LevelChunk {
 	
 	get x() { return this.#pos[0]; }
 	get y() { return this.#pos[1]; }
+	
+	serialize() {
+		let data = [];
+		for (let ty = 0; ty < CHUNK_SIZE; ++ty) {
+			data.push(...this.#tiles[ty]);
+		}
+		return {
+			type: "qb:load_chunk",
+			x: this.x,
+			y: this.y,
+			tiles: data
+		};
+	}
 	
 }
 

@@ -6,10 +6,36 @@ import * as QBTiles from "../common/index/QBTiles.js";
 
 import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
-const levelGenerator = new LevelGenerator(1);
-const serverLevel = levelGenerator.generateLevel();
-
 const input = new ServerInputHandler();
+
+let clientReady = false;
+
+onmessage = evt => {
+	switch (evt.data.type) {
+		case "qb:kb_input_update": {
+			input.updateInput(evt.data.state | 0);
+			break;
+		}
+		case "qb:jump_input": {
+			input.handleJump(evt.data.vec);
+			break;
+		}
+		case "qb:client_ready": {
+			clientReady = true;
+			console.log("Client ready, server starting.");
+			break;
+		}
+	}
+};
+
+const TICK_TARGET = 30;
+
+const levelSeed = 1;
+const levelGenerator = new LevelGenerator(levelSeed);
+const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
+
+postMessage({ type: "qb:expected_chunk_count", count: serverLevel.getAllChunks().length });
+serverLevel.getAllChunks().forEach(chunk => postMessage(chunk.serialize()));
 
 let updateControl = null;
 
@@ -25,31 +51,16 @@ updateControl = controlledEntity.id;
 //serverLevel.addTicked(otherEntity);
 //serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 
-const TICK_TARGET = 30;
-
 let stopped = false;
-
-onmessage = evt => {
-	switch (evt.data.type) {
-		case "qb:kb_input_update": {
-			input.updateInput(evt.data.state | 0);
-			break;
-		}
-		case "qb:jump_input": {
-			input.handleJump(evt.data.vec);
-			break;
-		}
-	}
-};
 
 function mainloop() {
 	let startMs = Date.now();
 	input.tick();
-	if (serverLevel) {
+	if (serverLevel && clientReady) {
 		serverLevel.tick();	
 	}
 	while (Date.now() - startMs < TICK_TARGET) {}
-	if (serverLevel) {
+	if (serverLevel && clientReady) {
 		postMessage({
 			type: "qb:update_client",
 			time: Date.now(),

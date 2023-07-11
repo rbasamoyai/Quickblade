@@ -22,12 +22,12 @@ export class LevelGenerator {
 		this.#defaultTile = defaultTile;
 	}
 	
-	generateLevel() {
+	generateLevel(msgLogger) {
 		this.#addRoomsToGenerate();		
-		console.log(`Generating ${this.#levelFeatures.length} rooms`);
+		msgLogger(`Generating ${this.#levelFeatures.length} rooms`);
 		
 		// Phase 2: connecting rooms
-		//this.#connectRoomsToEachOther();
+		this.#connectRoomsToEachOther();
 		
 		// Phase 3: generating features
 		// The level features are added to chunks.
@@ -39,6 +39,8 @@ export class LevelGenerator {
 		// After generation, pathways are generated between features.
 		
 		// Chunks are padded out so as to hide open air.
+		
+		// Add entities.
 		
 		return new Level(this.#chunks);
 	}
@@ -80,8 +82,10 @@ export class LevelGenerator {
 	
 	#connectRoomsToEachOther() {
 		if (this.#levelFeatures.size === 0) return /*something*/;
-		let minX = minY = Infinity;
-		let maxX = maxY = -Infinity;
+		let minX = Infinity;
+		let minY = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
 		
 		for (const feature of this.#levelFeatures) {
 			minX = Math.min(minX, feature.x);
@@ -98,9 +102,9 @@ export class LevelGenerator {
 		let superTriMx = (maxX - minX) * 0.5;
 		let superTriMy = (maxY - minY) * 0.5;
 		
-		let superTriV1 = new Vec3(superTriMx - r1, superTriMy - r);
-		let superTriV2 = new Vec3(superTriMx + r1, superTriMy - r);
-		let superTriV3 = new Vec3(superTriMx, superTriMy + 2 * r);
+		let superTriV1 = new Vec2(superTriMx - r1, superTriMy - r);
+		let superTriV2 = new Vec2(superTriMx + r1, superTriMy - r);
+		let superTriV3 = new Vec2(superTriMx, superTriMy + 2 * r);
 	}
 	
 	getTile(x, y) {
