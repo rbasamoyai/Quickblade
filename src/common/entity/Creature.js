@@ -29,7 +29,7 @@ export class Creature extends Entity {
 			this.facingRight = true;
 		}
 		if (!this.noGravity && this.isOnGround() && !this.hasImpulse) {
-			this.setVelocity([this.dx * this.groundFriction(), this.dy]);
+			this.setVelocity(new Vec2(this.dx * this.groundFriction(), this.dy));
 		}
 		this.hasImpulse = false;
 	}

@@ -18,12 +18,12 @@ export class Monster extends Creature {
 			let x = collided.x - this.x;
 			let dy = collided.isOnGround() ? 0.1 : collided.dy;
 			if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
-				collided.setVelocity([-KNOCKBACK, dy]);
+				collided.setVelocity(new Vec2(-KNOCKBACK, dy));
 			} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {
-				collided.setVelocity([KNOCKBACK, dy]);
+				collided.setVelocity(new Vec2(KNOCKBACK, dy));
 			} else {
 				let dx = Math.random() > 0.5 ? KNOCKBACK : -KNOCKBACK;
-				collided.setVelocity([dx, dy]);
+				collided.setVelocity(new Vec2(dx, dy));
 			}
 		}
 	}

@@ -6,6 +6,8 @@ import * as QBTiles from "../common/index/QBTiles.js";
 
 import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
+import Vec2 from "../common/Vec2.js";
+
 const input = new ServerInputHandler();
 
 let clientReady = false;
@@ -17,7 +19,7 @@ onmessage = evt => {
 			break;
 		}
 		case "qb:jump_input": {
-			input.handleJump(evt.data.vec);
+			input.handleJump(new Vec2(...evt.data.vec));
 			break;
 		}
 		case "qb:client_ready": {

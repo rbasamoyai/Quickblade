@@ -1,3 +1,5 @@
+import Vec2 from "../common/Vec2.js";
+
 const MAX_JUMP = 0.6;
 const INPUT_SCALE = 0.8;
 
@@ -30,7 +32,7 @@ export default class ServerInputHandler {
 	tick() {
 		if (!this.#entity?.canControl()) return;
 		let max = 0.5;
-		let newVel = [this.#entity.dx, this.#entity.dy];
+		let newVel = new Vec2(this.#entity.dx, this.#entity.dy);
 		let onGround = this.#entity.isOnGround();
 		let flying = this.#entity.noGravity;
 		let cdx = onGround || flying ? 0.05 : 0.025;
@@ -40,38 +42,40 @@ export default class ServerInputHandler {
 			if (this.#queuedJump) {
 				let magnitude = Math.sqrt(this.#queuedJump[0] * this.#queuedJump[0] + this.#queuedJump[1] * this.#queuedJump[1]);
 				let k = Math.min(1, MAX_JUMP / magnitude) * INPUT_SCALE;
-				newVel[0] += this.#queuedJump[0] * k;
-				newVel[1] += this.#queuedJump[1] * k;
+				newVel = newVel.addVec(this.#queuedJump.scale(k));
 				modified = true;
 			} else if (!this.#leftImp && !this.#rightImp) {
-				newVel[0] = newVel[0] * this.#entity.groundFriction();
+				newVel = newVel.multiply(this.#entity.groundFriction(), 1);
 				modified = true;
 			}
 		}
 		if (this.#leftImp && !this.#rightImp) {
-			newVel[0] = this.#entity.dx > 0 && onGround ? 0 : this.#entity.dx > -max ? Math.max(-max, this.#entity.dx - cdx) : this.#entity.dx;
+			newVel = new Vec2(this.#entity.dx > 0 && onGround ? 0 : this.#entity.dx > -max ? Math.max(-max, this.#entity.dx - cdx) : this.#entity.dx, newVel.y);
 			modified = true;
 		}
 		if (this.#rightImp && !this.#leftImp) {
-			newVel[0] = this.#entity.dx < 0 && onGround ? 0 : this.#entity.dx < max ? Math.min(max, this.#entity.dx + cdx) : this.#entity.dx;
+			newVel = new Vec2(this.#entity.dx < 0 && onGround ? 0 : this.#entity.dx < max ? Math.min(max, this.#entity.dx + cdx) : this.#entity.dx, newVel.y);
 			modified = true;
 		}
 		
 		if (flying) {
+			let nx;
 			if (this.#leftImp && !this.#rightImp) {
-				newVel[0] = -0.5;
+				nx = -0.5;
 			} else if (!this.#leftImp && this.#rightImp) {
-				newVel[0] = 0.5;
+				nx = 0.5;
 			} else {
-				newVel[0] = 0;
+				nx = 0;
 			}
+			let ny;			
 			if (this.#upImp && !this.#downImp) {
-				newVel[1] = 0.5;
+				ny = 0.5;
 			} else if (!this.#upImp && this.#downImp) {
-				newVel[1] = -0.5;
+				ny = -0.5;
 			} else {
-				newVel[1] = 0;
+				ny = 0;
 			}
+			newVel = new Vec2(nx, ny);
 			modified = true;
 		}
 		

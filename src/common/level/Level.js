@@ -199,7 +199,7 @@ export class Level {
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
 			let s = entity.displacement(dt);
-			ctx.translate(s[0], s[1]);
+			ctx.translate(s.x, s.y);
 			entity.render(ctx, dt);
 			ctx.restore();
 		}

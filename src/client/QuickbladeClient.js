@@ -133,14 +133,15 @@ function mainRender() {
 			
 			ctx.save();
 			let ds = tracked.displacement(dt);
-			let dm = [mouseX * 16 - 8, mouseY * -15 + 8];
+			let dmx = mouseX * 16 - 8;
+			let dmy = mouseY * -15 + 8;
 			
 			camera.lerp(ctx, dt);
-			ctx.translate(ds[0], ds[1]);
+			ctx.translate(ds.x, ds.y);
 			
 			ctx.beginPath();
 			ctx.moveTo(0, 0);
-			ctx.lineTo(dm[0], dm[1]);
+			ctx.lineTo(dmx, dmy);
 			
 			ctx.stroke();
 			
@@ -228,7 +229,7 @@ function updateCamera(id) {
 	if (!clientLevel) return;
 	tracked = clientLevel.getEntityById(id);
 	if (!tracked) return;
-	camera.setState([tracked.x, tracked.y], [tracked.ox, tracked.oy]);
+	camera.setState(tracked.pos, tracked.oldPos);
 }
 
 function isControlling() { return controlledEntity || controlledEntity == 0; }
@@ -267,7 +268,7 @@ canvas.onmousemove = evt => {
 canvas.onclick = evt => {
 	if (inputMode === "jump" && clientLevel && camera && tracked) {
 		let ds = tracked.displacement(0);
-		let inputVec = [camera.x - ds[0] + mouseX * 16 - 8, camera.y - ds[1] + mouseY * -15 + 8];
+		let inputVec = [camera.x - ds.x + mouseX * 16 - 8, camera.y - ds.y + mouseY * -15 + 8];
 		worker.postMessage({
 			type: "qb:jump_input",
 			vec: inputVec

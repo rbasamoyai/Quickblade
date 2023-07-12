@@ -1,4 +1,5 @@
 import { AABB, collide } from "../Collision.js";
+import Vec2 from "../Vec2.js";
 
 let COUNTER = 0;
 
@@ -24,9 +25,9 @@ export class Entity {
 		this.#width = type.properties.width;
 		this.#height = type.properties.height;
 		
-		this.#pos = [x, y];
-		this.#oldPos = [x, y];
-		this.#vel = [0, 0];
+		this.#pos = new Vec2(x, y);
+		this.#oldPos = this.#pos;
+		this.#vel = Vec2.ZERO;
 		
 		//this.newPath();
 		
@@ -38,7 +39,7 @@ export class Entity {
 		return {
 			type: "qb:load_entity",
 			id: this.#id,
-			pos: [this.#pos[0], this.#pos[1]],
+			pos: this.#pos.toArray(),
 			entityType: this.#type.id
 		};
 	}
@@ -49,31 +50,39 @@ export class Entity {
 		return {
 			type: "qb:update_entity",
 			id: this.#id,
-			pos: this.#pos,
-			oldPos: this.#oldPos,
-			vel: this.#vel,
+			pos: this.#pos.toArray(),
+			oldPos: this.#oldPos.toArray(),
+			vel: this.#vel.toArray(),
 			facingRight: this.facingRight
 		};
 	}
 	
 	readUpdateSnapshot(data) {
-		this.setPos(data.pos);
-		this.setOldPos(data.oldPos);
-		this.setVelocity(data.vel);
+		this.setPos(new Vec2(...data.pos));
+		this.setOldPos(new Vec2(...data.oldPos));
+		this.setVelocity(new Vec2(...data.vel));
 		this.facingRight = data.facingRight;
 	}
 	
 	tick() {
-		this.#oldPos = [this.#pos[0], this.#pos[1]];
+		this.#oldPos = this.#pos;
 		
 		if (!this.noGravity) {
-			let flag = this.isOnGround();
-			this.#vel[1] = flag && this.dy <= 0.0001 ? 0 : this.dy - 0.02;
-			if (flag) {
-				this.#pos[1] = 2;
-			}
+			this.#vel = new Vec2(this.dx, this.isOnGround() && this.dy <= 0.0001 ? 0 : this.dy - 0.02);
 		}
+		
+		// Collision
+		
+		// Broad phase: get box from position to dx and do checks
+		
+		
+		
+		
 		this.move(this.dx, this.dy);
+	}
+	
+	moveAndCollide() {
+		
 	}
 	
 	isOnGround() {
@@ -114,17 +123,20 @@ export class Entity {
 		return false;
 	}
 	
-	get x() { return this.#pos[0]; }
-	get y() { return this.#pos[1]; }
+	get pos() { return this.#pos; }
+	get x() { return this.#pos.x; }
+	get y() { return this.#pos.y; }
 	setPos(pos) { this.#pos = pos; }
-	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
+	move(dx, dy) { this.#pos = this.#pos.add(dx, dy); }
 	
-	get ox() { return this.#oldPos[0]; }
-	get oy() { return this.#oldPos[1]; }
+	get oldPos() { return this.#oldPos; }
+	get ox() { return this.#oldPos.x; }
+	get oy() { return this.#oldPos.y; }
 	setOldPos(oldPos) { this.#oldPos = oldPos; }
 	
-	get dx() { return this.#vel[0]; }
-	get dy() { return this.#vel[1]; }
+	get vel() { return this.#vel; }
+	get dx() { return this.#vel.x; }
+	get dy() { return this.#vel.y; }
 	setVelocity(vel) { this.#vel = vel; }
 	
 	onJump() {}
@@ -196,8 +208,7 @@ export class Entity {
 			sy += seg.vel[1] * dt;
 		}
 		return [sx, sy]; */
-		let invPartialTicks = 1 - dt;
-		return [this.ox * invPartialTicks + this.x * dt, this.oy * invPartialTicks + this.y * dt];
+		return this.#oldPos.addVec(this.#pos.subtractVec(this.#oldPos).scale(dt));
 	}
 	
 }

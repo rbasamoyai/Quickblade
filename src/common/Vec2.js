@@ -30,4 +30,6 @@ export default class Vec2 {
 	
 	dot(vec) { return this.x * vec.x + this.y * vec.y; }
 	
+	toArray() { return [this.x, this.y]; }
+	
 }
