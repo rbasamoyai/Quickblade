@@ -5,6 +5,9 @@ import { AABB } from "../../Collision.js";
 
 import QBRandom from "../../QBRandom.js";
 import Vec2 from "../../Vec2.js";
+import * as Direction from "../../Direction.js";
+import Triangle from "./Triangle.js";
+import EdgeSet from "./EdgeSet.js";
 
 export class LevelGenerator {
 	
@@ -15,28 +18,30 @@ export class LevelGenerator {
 	maxDepth = 3;
 	#levelFeatures = [];
 	#defaultTile;
+	#msgLogger;
 	
-	constructor(seed, defaultTile = QBTiles.BLOCK) {
+	constructor(seed, msgLogger = console.log, defaultTile = QBTiles.BACK_WALL) {
 		this.#seed = seed ? seed : Date.now();
 		this.#rand = new QBRandom(seed);
 		this.#defaultTile = defaultTile;
+		this.#msgLogger = msgLogger;
 	}
 	
-	generateLevel(msgLogger) {
+	generateLevel() {
 		this.#addRoomsToGenerate();		
-		msgLogger(`Generating ${this.#levelFeatures.length} rooms`);
+		this.#msgLogger(`Generating ${this.#levelFeatures.length} rooms...`);
 		
-		// Phase 2: connecting rooms
-		this.#connectRoomsToEachOther();
+		this.#msgLogger(`Connecting rooms...`);
+		let graph = this.#connectRoomsToEachOther();
 		
-		// Phase 3: generating features
-		// The level features are added to chunks.
+		for (const edge of graph.values()) {
+			this.#msgLogger(edge);
+		}
 		
+		this.#msgLogger(`Constructing rooms...`);
 		for (const feature of this.#levelFeatures) {
 			feature.generateFeature(this.#rand, this);
 		}
-		
-		// After generation, pathways are generated between features.
 		
 		// Chunks are padded out so as to hide open air.
 		
@@ -50,14 +55,12 @@ export class LevelGenerator {
 		let start = new ChamberFeature(0, this.#rand, 0, 0);
 		this.#levelFeatures.push(start);
 		
-		// Add more rooms.
-		
 		let p = 0;
 		let MAX_ITERS = 100000;
 		while (this.#levelFeatures.length < roomCount && p++ < MAX_ITERS) {
 			let len = this.#levelFeatures.length;
 			
-			// Pick feature from pool.
+			// TODO: Add more features and pick a feature from a pool.
 			let newFeature = new ChamberFeature(len, this.#rand, 0, 0);
 			
 			let oldFeature = this.#levelFeatures[this.#rand.nextInt(0, len)];
@@ -72,7 +75,6 @@ export class LevelGenerator {
 		let point = oldFeature.getPointForFeature(this.#rand, feature);
 		feature.setPos(point.x, point.y);
 		let newProfile = feature.featureProfile();
-		
 		for (const otherFeature of this.#levelFeatures) {
 			if (otherFeature.featureProfile().collideBox(newProfile)) return false;
 		}
@@ -81,7 +83,114 @@ export class LevelGenerator {
 	}
 	
 	#connectRoomsToEachOther() {
-		if (this.#levelFeatures.size === 0) return /*something*/;
+		let baseGraph = this.#generateDelaunayGraph();
+		let graph = new EdgeSet();
+		
+		// Stage 1: Minimum Spanning Tree via Prim's algorithm
+		let featuresIterated = new Set([this.#rand.nextInt(0, this.#levelFeatures.length)]);
+		while (featuresIterated.size < this.#levelFeatures.length) {
+			let added = null;
+			let distSqr = Infinity;
+			
+			for (const base of featuresIterated.values()) {
+				let feature = this.#levelFeatures[base];
+				
+				for (const connected of baseGraph.connectedTo(base)) {
+					if (featuresIterated.has(connected)) continue;
+					let connectedFeature = this.#levelFeatures[connected];
+					let dx = connectedFeature.x - feature.x;
+					let dy = connectedFeature.y - feature.y;
+					let distSqr1 = dx * dx + dy * dy;
+					if (added !== null && distSqr1 >= distSqr) continue;
+					added = [connected, base];
+					distSqr = distSqr1;
+				}
+			}
+			if (!added) break;
+			graph.add(added[0], added[1]);
+			featuresIterated.add(added[0]);
+		}
+		
+		// Stage 2: Add non-linearity by adding some of the remaining graph connections.
+		let connectionChance = 0; //0.125; TODO: uncomment after verifying MST works
+		for (const edge of baseGraph.values()) {
+			if (!graph.has(edge[0], edge[1]) && this.#rand.nextFloat() < connectionChance) {
+				graph.add(edge[0], edge[1]);
+			}
+		}
+		
+		return graph;
+	}
+	
+	#generateDelaunayGraph() {
+		// Implementation of Bowyer-Watson algorithm for Delaunay triangulation from Wikipedia:
+		// https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm
+		let graph = new EdgeSet();
+		if (this.#levelFeatures.size === 0) return graph;
+		let triangles = [];
+		
+		let superTri = this.#makeSuperTriangle();
+		triangles.push(superTri);
+		let superTriVerts = superTri.allVerts();
+		
+		for (const feature of this.#levelFeatures) {
+			let badTriangles = [];
+			
+			for (const tri of triangles) {
+				if (tri.inCircumcircle(feature.x, feature.y)) badTriangles.push(tri);
+			}
+			
+			let polygon = new EdgeSet();
+			let dupeEdges = new EdgeSet();
+			for (const tri of badTriangles) {
+				let edges = tri.allEdges();
+				for (const edge of edges) {
+					if (dupeEdges.has(edge[0], edge[1])) continue;
+					if (polygon.has(edge[0], edge[1])) {
+						dupeEdges.add(edge[0], edge[1]);
+						polygon.delete(edge[0], edge[1]);
+					} else {
+						polygon.add(edge[0], edge[1]);
+					}
+				}
+				triangles.splice(triangles.indexOf(tri), 1);
+			}
+			
+			let vert3 = new Vec2(feature.x, feature.y);
+			
+			for (const edge of polygon.values()) {
+				let vert1Id = edge[0];
+				let vert2Id = edge[1];
+				
+				let vert1;
+				if (vert1Id < 0) {
+					vert1 = superTriVerts.get(vert1Id);
+				} else {
+					let assocFeature = this.#levelFeatures[vert1Id];
+					vert1 = new Vec2(assocFeature.x, assocFeature.y);
+				}
+				
+				let vert2;
+				if (vert2Id < 0) {
+					vert2 = superTriVerts.get(vert2Id);
+				} else {
+					let assocFeature = this.#levelFeatures[vert2Id];
+					vert2 = new Vec2(assocFeature.x, assocFeature.y);
+				}
+				
+				triangles.push(new Triangle(vert1, vert1Id, vert2, vert2Id, vert3, feature.id));
+			}
+		}
+		
+		for (const tri of triangles) {
+			for (const edge of tri.resolveEdges()) {
+				graph.add(edge[0], edge[1]);
+			}
+		}
+		return graph;
+	}
+	
+	#makeSuperTriangle() {
 		let minX = Infinity;
 		let minY = Infinity;
 		let maxX = -Infinity;
@@ -105,6 +214,11 @@ export class LevelGenerator {
 		let superTriV1 = new Vec2(superTriMx - r1, superTriMy - r);
 		let superTriV2 = new Vec2(superTriMx + r1, superTriMy - r);
 		let superTriV3 = new Vec2(superTriMx, superTriMy + 2 * r);
+		return new Triangle(superTriV1, -1, superTriV2, -2, superTriV3, -3);
+	}
+	
+	#connectFeatures(graph) {
+		
 	}
 	
 	getTile(x, y) {
@@ -147,7 +261,7 @@ class LevelFeature {
 	constructor(typeId, id, rand, x, y) {
 		this.#typeId = typeId;
 		this.#id = id;
-		this.#pos = [x, y];
+		this.#pos = new Vec2(x, y);
 	}
 	
 	generateFeature(rand, gen) {}
@@ -162,12 +276,16 @@ class LevelFeature {
 		let height = thisProfile.height + otherProfile.height * 1.5;
 		
 		let f = rand.nextFloat();
-		switch (rand.nextInt(0, 4)) {
-			case 0: return new Vec2(minX + width * f, minY + height); // Up
-			case 1: return new Vec2(minX + width * f, minY); // Down
-			case 2: return new Vec2(minX, minY + height * f) // Left
-			default: return new Vec2(minX + width, minY + height * f); // Right, 3
+		switch (Direction.random(rand)) {
+			case Direction.UP: return new Vec2(minX + width * f, minY + height);
+			case Direction.DOWN: return new Vec2(minX + width * f, minY);
+			case Direction.LEFT: return new Vec2(minX, minY + height * f);
+			default /* Direction.RIGHT */: return new Vec2(minX + width, minY + height * f);
 		}
+	}
+	
+	getTunnelingPoint(rand, otherFeature) {
+		return this.#pos.copy();
 	}
 	
 	featureProfile() {
@@ -177,9 +295,9 @@ class LevelFeature {
 	get type() { return this.#typeId; }
 	get id() { return this.#id; }
 	
-	setPos(x, y) { this.#pos = [x, y]; }
-	get x() { return this.#pos[0]; }
-	get y() { return this.#pos[1]; }
+	setPos(x, y) { this.#pos = new Vec2(x, y); }
+	get x() { return this.#pos.x; }
+	get y() { return this.#pos.y; }
 	
 }
 
@@ -209,6 +327,15 @@ class ChamberFeature extends LevelFeature {
 				}
 			}
 		}
+	}
+	
+	getTunnelingPoint(rand, otherFeature) {
+		let ox = this.#getBottomLeftX();
+		let oy = this.#getBottomLeftY();
+		
+		let th = Math.atan(otherFeature.y - this.y, otherFeature.x - this.x);
+		th += rand.nextGaussian(0, 45);
+		
 	}
 	
 	featureProfile() {
@@ -242,6 +369,10 @@ class EndFeature extends LevelFeature {
 		return this.#wrapped.getPointForFeature(rand, otherFeature);
 	}
 	
+	getTunnelingPoint(rand, otherFeature) {
+		return this.#wrapped.getTunnelingPoint(rand, otherFeature);
+	}
+	
 	featureProfile() {
 		return this.#wrapped.featureProfile();
 	}
@@ -260,13 +391,13 @@ const TWO_PI = Math.PI * 2;
 function pointOnBox(w, h, th) {
 	th = (th % TWO_PI + TWO_PI) % TWO_PI;
 	if (th > Math.PI) th -= TWO_PI;
-	if (Math.abs(th - Math.PI / 2) < EPSILION) return [h/2, 0];
-	if (Math.abs(th - Math.PI / -2) < EPSILION) return [-h/2, 0];
+	if (Math.abs(th - Math.PI / 2) < EPSILION) return new Vec2(h/2, 0);
+	if (Math.abs(th - Math.PI / -2) < EPSILION) return new Vec2(-h/2, 0);
 	let l = Math.sqrt(w*w/4 + h*h/4);
 	let x1 = clamp(Math.cos(th) * l, -w/2, w/2);
 	let y1 = Math.sin(th) * l;
 	let y2 = clamp(y1, -h/2, h/2);
-	return -h/2 <= y1 && y1 < h/2 ? [x1, x1 * Math.tan(th)] : [y2 / Math.tan(th), y2];
+	return -h/2 <= y1 && y1 < h/2 ? new Vec2(x1, x1 * Math.tan(th)) : new Vec2(y2 / Math.tan(th), y2);
 }
 
 function clamp(x, min, max) {

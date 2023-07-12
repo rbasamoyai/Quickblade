@@ -40,6 +40,7 @@ let controlledEntity = null;
 
 let expectedChunkCount = -1;
 let loadChunks = [];
+let levelGraph = null;
 let clientLevel = null;
 
 worker.onmessage = evt => {
@@ -52,15 +53,7 @@ worker.onmessage = evt => {
 		}
 		case "qb:load_chunk": {
 			loadChunks.push(new LevelChunk(evt.data.x, evt.data.y, QBTiles.AIR, evt.data.tiles));
-			if (expectedChunkCount === loadChunks.length) {
-				clientLevel = new Level(loadChunks);
-				clientLevel.setCamera(camera);
-				expectedChunkCount = -1;
-				loadChunks = [];
-				gameState = RENDER_LEVEL;
-				console.log("Client is ready.")
-				worker.postMessage({ type: "qb:client_ready" });
-			}
+			trySettingReady();
 			break;
 		}
 		case "qb:update_client": {
@@ -82,6 +75,10 @@ worker.onmessage = evt => {
 			gameState = RENDER_DEATH_SCREEN;
 			break;
 		}
+		/* TEMP */
+		case "qb:level_graph": {
+			
+		}
 	}
 };
 
@@ -100,6 +97,17 @@ let lastFrameMs = new Date().getTime();
 let lastTickMs = new Date().getTime();
 
 let stopped = false;
+
+function trySettingReady() {
+	if (expectedChunkCount !== loadChunks.length) return;
+	clientLevel = new Level(loadChunks);
+	clientLevel.setCamera(camera);
+	expectedChunkCount = -1;
+	loadChunks = [];
+	gameState = RENDER_LEVEL;
+	console.log("Client is ready.")
+	worker.postMessage({ type: "qb:client_ready" });
+}
 
 function mainRender() {
 	let curMs = Date.now();

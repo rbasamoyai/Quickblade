@@ -8,14 +8,17 @@ const MAX_ITERS = 6;
 export class Level {
 
 	#chunks;
+	#levelGraph;
+	
 	#loaded = new Map();
 	#camera;
 	snapshots = [];
 	#topLeft;
 	#dimensions;
 	
-	constructor(cs) {
+	constructor(cs, levelGraph) {
 		this.#chunks = cs;
+		this.#levelGraph = levelGraph;
 		
 		let minX = Infinity;
 		let minY = Infinity;

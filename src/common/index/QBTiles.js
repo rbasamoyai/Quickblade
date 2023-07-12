@@ -30,5 +30,6 @@ export function getIdNum(tile) {
 }
 
 export const AIR = register("qb:air", Tile, new TileProperties("block/missing").canCollide(false).noRender());
+export const BACK_WALL = register("qb:back_wall", Tile, new TileProperties("block/back_wall"));
 export const BLOCK = register("qb:block", Tile, new TileProperties("block/block"));
 export const BACKGROUND = register("qb:background", Tile, new TileProperties("block/background").canCollide(false));
