@@ -34,14 +34,15 @@ export class LevelGenerator {
 		this.#msgLogger(`Connecting rooms...`);
 		let graph = this.#connectRoomsToEachOther();
 		
-		for (const edge of graph.values()) {
-			this.#msgLogger(edge);
-		}
+		// for (const edge of graph.values()) this.#msgLogger(edge);
 		
 		this.#msgLogger(`Constructing rooms...`);
 		for (const feature of this.#levelFeatures) {
 			feature.generateFeature(this.#rand, this);
 		}
+		
+		this.#msgLogger(`Connecting rooms...`);
+		this.#connectFeatures(graph);
 		
 		// Chunks are padded out so as to hide open air.
 		
@@ -112,12 +113,13 @@ export class LevelGenerator {
 		}
 		
 		// Stage 2: Add non-linearity by adding some of the remaining graph connections.
-		let connectionChance = 0; //0.125; TODO: uncomment after verifying MST works
+		let connectionChance = 0.0625;
 		for (const edge of baseGraph.values()) {
 			if (!graph.has(edge[0], edge[1]) && this.#rand.nextFloat() < connectionChance) {
 				graph.add(edge[0], edge[1]);
 			}
 		}
+		this.#msgLogger(`Shrunk connection count from ${baseGraph.size} to ${graph.size}`);
 		
 		return graph;
 	}
@@ -218,6 +220,58 @@ export class LevelGenerator {
 	}
 	
 	#connectFeatures(graph) {
+		let points = new EdgeSet();
+		for (const edge of graph.values()) {
+			let feature1 = this.#levelFeatures[edge[0]];
+			let feature2 = this.#levelFeatures[edge[1]];
+			
+			let point1 = new Vec2(Math.round(feature1.x), Math.round(feature1.y));
+			let point2 = new Vec2(Math.round(feature2.x), Math.round(feature2.y));
+			
+			// Primitive line algorithm that uses just enough samples, might use Bezier curves later
+			let diff = point2.subtractVec(point1);
+			if (diff.lengthSqr() < 1e-4) continue;
+			let dir = diff.normalize().scale(0.5);
+			let samples = Math.ceil(diff.length() * 2);
+			
+			for (let i = 0; i < samples; ++i) {
+				let pos = dir.scale(i).addVec(point1);
+				points.add(Math.floor(pos.x), Math.floor(pos.y));
+			}
+		}
+		
+		// Pass 1: walls on replaceable tiles, e.g. back walls
+		for (const pt of points.values()) {
+			let ox = pt[0];
+			let oy = pt[1];
+			
+			for (let ty = -2; ty < 3; ++ty) {
+				for (let tx = -2; tx < 3; ++tx) {
+					if (ty * ty + tx * tx > 8) continue;
+					
+					let tx1 = ox + tx;
+					let ty1 = oy + ty;
+					let tile = QBTiles.getFromIdNum(this.getTile(tx1, ty1));
+					if (tile.replaceable) this.setTile(tx1, ty1, QBTiles.BLOCK);
+				}
+			}
+		}
+		
+		// Pass 2: background on walls
+		for (const pt of points.values()) {
+			let ox = pt[0];
+			let oy = pt[1];
+			
+			for (let ty = -1; ty < 2; ++ty) {
+				for (let tx = -1; tx < 2; ++tx) {
+					if (ty * ty + tx * tx > 3) continue;
+					
+					let tx1 = ox + tx;
+					let ty1 = oy + ty;
+					this.setTile(tx1, ty1, QBTiles.BACKGROUND);
+				}
+			}
+		}
 		
 	}
 	
@@ -330,12 +384,9 @@ class ChamberFeature extends LevelFeature {
 	}
 	
 	getTunnelingPoint(rand, otherFeature) {
-		let ox = this.#getBottomLeftX();
-		let oy = this.#getBottomLeftY();
-		
 		let th = Math.atan(otherFeature.y - this.y, otherFeature.x - this.x);
 		th += rand.nextGaussian(0, 45);
-		
+		return pointOnBox(this.#width, this.#height).add(this.x, this.y);
 	}
 	
 	featureProfile() {

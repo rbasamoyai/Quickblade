@@ -39,6 +39,8 @@ export default class EdgeSet {
 		}
 		return ret;
 	}
+	
+	get size() { return this.#encodedSet.size; }
 
 }
 

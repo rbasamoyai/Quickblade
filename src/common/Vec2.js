@@ -3,6 +3,8 @@ export default class Vec2 {
 	#x;
 	#y;
 	
+	static ZERO = new Vec2(0, 0);
+	
 	constructor(x, y) {
 		this.#x = x;
 		this.#y = y;
@@ -12,15 +14,16 @@ export default class Vec2 {
 	get y() { return this.#y; }
 	
 	add(x, y) { return new Vec2(this.x + x, this.y + y); }
-	add(vec) { return this.add(vec.x, vec.y); }
+	addVec(vec) { return this.add(vec.x, vec.y); }
 	
 	subtract(x, y) { return this.add(-x, -y); }
-	subtract(x, y) { return this.subtract(vec.x, vec.y); }
+	subtractVec(vec) { return this.subtract(vec.x, vec.y); }
 	
 	multiply(x, y) { return new Vec2(this.x * x, this.y * y); }
-	multiply(vec) { return this.multiply(vec.x, vec.y); }
+	multiplyVec(vec) { return this.multiply(vec.x, vec.y); }
 	scale(s) { return this.multiply(s, s); }
 	reverse() { return this.multiply(-1); }
+	normalize() { return this.lengthSqr() < 1e-4 ? ZERO : this.scale(1 / this.length()); }
 	
 	lengthSqr() { return this.x * this.x + this.y * this.y; }
 	length() { return Math.sqrt(this.lengthSqr()); }

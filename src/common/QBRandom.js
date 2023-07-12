@@ -22,7 +22,7 @@ export default class QBRandom {
 		return this.next() % dx + start; 
 	}
 	
-	static #MAX_UINT_RECIP = 1 / (2**32 - 1) >>> 0;
+	static #MAX_UINT_RECIP = 1 / (2**32 - 1);
 	
 	nextFloat() { return this.next() * QBRandom.#MAX_UINT_RECIP; }
 	
