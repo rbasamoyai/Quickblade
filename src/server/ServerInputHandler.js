@@ -11,6 +11,7 @@ export default class ServerInputHandler {
 	#downImp = false;
 	#entity = null;
 	#queuedJump = null;
+	#jumpBufferTime = 0;
 	
 	constructor() {
 	}
@@ -23,8 +24,9 @@ export default class ServerInputHandler {
 	}
 	
 	handleJump(vec) {
-		if (this.#queuedJump || !this.#entity || this.#entity.noGravity) return;
+		if (this.#jumpBufferTime > 0) return;
 		this.#queuedJump = vec;
+		this.#jumpBufferTime = 5;
 	}
 	
 	setEntity(entity) { this.#entity = entity; };
@@ -33,21 +35,21 @@ export default class ServerInputHandler {
 		if (!this.#entity?.canControl()) return;
 		let max = 0.5;
 		let newVel = new Vec2(this.#entity.dx, this.#entity.dy);
-		let onGround = this.#entity.isOnGround;
-		let flying = this.#entity.noGravity;
+		let onGround = this.#entity.isOnGround();
+		let flying = this.#entity.hasNoGravity();
 		let cdx = onGround || flying ? 0.05 : 0.025;
+		let jumping = this.#queuedJump && this.#entity.canJump();
 		let modified = false;
 		
-		if (onGround) {
-			if (this.#queuedJump) {
-				let k = Math.min(1, MAX_JUMP / this.#queuedJump.length()) * INPUT_SCALE;
-				newVel = newVel.addVec(this.#queuedJump.scale(k));
-				modified = true;
-			} else if (!this.#leftImp && !this.#rightImp) {
-				newVel = newVel.multiply(this.#entity.groundFriction(), 1);
-				modified = true;
-			}
+		if (jumping) {
+			let k = Math.min(1, MAX_JUMP / this.#queuedJump.length()) * INPUT_SCALE;
+			newVel = newVel.addVec(this.#queuedJump.scale(k));
+			modified = true;
+		} else if (onGround && !this.#leftImp && !this.#rightImp) {
+			newVel = newVel.multiply(this.#entity.groundFriction(), 1);
+			modified = true;
 		}
+		
 		if (this.#leftImp && !this.#rightImp) {
 			newVel = new Vec2(this.#entity.dx > 0 && onGround ? 0 : this.#entity.dx > -max ? Math.max(-max, this.#entity.dx - cdx) : this.#entity.dx, newVel.y);
 			modified = true;
@@ -83,9 +85,13 @@ export default class ServerInputHandler {
 			this.#entity.setVelocity(newVel);
 			this.#entity.hasImpulse = true;
 		}
-		if (this.#queuedJump) {
+		if (jumping) {
 			this.#entity.onJump();
 			this.#queuedJump = null;
+			this.#jumpBufferTime = 0;
+		} else {
+			this.#jumpBufferTime = Math.max(0, this.#jumpBufferTime - 1);
+			if (this.#jumpBufferTime === 0) this.#queuedJump = null;
 		}
 	}
 	

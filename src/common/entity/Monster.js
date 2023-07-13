@@ -15,10 +15,11 @@ export class Monster extends Creature {
 	tick() {
 		super.tick();
 		
+		// TODO: infighting?
 		let collided = this.level.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collide(e));
 		if (collided?.hurt(1, this)) {
 			let x = collided.x - this.x;
-			let dy = collided.isOnGround ? 0.1 : collided.dy;
+			let dy = collided.isOnGround() ? 0.1 : collided.dy;
 			if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
 				collided.setVelocity(new Vec2(-KNOCKBACK, dy));
 			} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {

@@ -17,11 +17,11 @@ export class Entity {
 	#id;
 	#width;
 	#height;
+	#isOnGround = false;
 	noGravity = false;
 	#type;
 	removed = false;
 	facingRight = true;
-	isOnGround = false;
 	
 	constructor(x, y, level, id, type) {
 		this.#type = type;
@@ -70,7 +70,7 @@ export class Entity {
 	tick() {
 		this.#oldPos = this.#pos;
 		
-		if (!this.noGravity && !this.isOnGround) {
+		if (!this.hasNoGravity() && !this.isOnGround()) {
 			this.setVelocity(new Vec2(this.dx, this.dy - 0.02));
 		}
 		
@@ -82,6 +82,7 @@ export class Entity {
 	moveAndCollide() {
 		// Broad phase: get box from position to dx and do checks
 		let aabb = this.getAABB();
+		let odx = this.dx;
 		let testVel = new Vec2(this.dx, this.noGravity ? this.dy : this.dy - 0.02);
 		let broadAABB = aabb.expandTowards(testVel.x, testVel.y);
 		
@@ -118,7 +119,7 @@ export class Entity {
 			onGround ||= res1.face === Direction.UP;
 			revertYVel &&= !Direction.isVertical(res1.face);
 		}
-		this.isOnGround = onGround;
+		this.#isOnGround = onGround;
 		if (revertYVel) this.setVelocity(new Vec2(this.dx, ody));
 	}
 	
@@ -151,16 +152,24 @@ export class Entity {
 		return new AABB(this.x - this.#width / 2, this.y, this.#width, this.#height);
 	}
 	
-	collide(other) {
+	collideEntities(other) {
 		let hitboxes = this.getHitboxes();
 		let hurtboxes = other.getHurtboxes();
 		
 		for (const hitbox of hitboxes) {
 			for (const hurtbox of hurtboxes) {
-				if (hitbox.collide(hurtbox, this.vel, other.vel).hit) return true;
+				if (hitbox.collideBox(hurtbox, this.vel, other.vel).hit) return true;
 			}
 		}
 		return false;
+	}
+	
+	isOnGround() {
+		return this.#isOnGround;
+	}
+	
+	hasNoGravity() {
+		return this.noGravity;
 	}
 	
 	getHitboxes() {

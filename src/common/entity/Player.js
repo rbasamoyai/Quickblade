@@ -12,6 +12,7 @@ export class Player extends Creature {
 	
 	#isAttacking = false;
 	#invulnerability = 0;
+	#coyoteTime = 0;
 	
 	constructor(x, y, level, id, type) {
 		super(x, y, level, id, type);
@@ -44,7 +45,9 @@ export class Player extends Creature {
 	tick() {
 		super.tick();
 		
-		if (!this.noGravity && this.isOnGround) {
+		this.#coyoteTime = this.isOnGround() ? 6 : Math.max(0, this.#coyoteTime - 1);
+		
+		if (!this.hasNoGravity() && this.isOnGround()) {
 			this.#isAttacking = false;
 			this.#invulnerability = 0;
 		}
@@ -53,7 +56,7 @@ export class Player extends Creature {
 			let collided = this.level.getEntities().filter(e => e instanceof Monster).find(e => this.collide(e));
 			if (collided?.hurt(1, this)) {
 				let x = collided.x - this.x;
-				let dy = collided.isOnGround ? 0.1 : collided.dy;
+				let dy = collided.isOnGround() ? 0.1 : collided.dy;
 				if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
 					collided.setVelocity(new Vec2(-KNOCKBACK, dy));
 				} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {
@@ -66,6 +69,10 @@ export class Player extends Creature {
 		}
 	}
 	
+	canJump() {
+		return !this.hasNoGravity() && this.#coyoteTime > 0 && !this.#isAttacking;
+	}
+	
 	getHitboxes() {
 		if (!this.#isAttacking) return [];
 		let sx = this.facingRight ? this.x + 0.5 : this.x - 2.5;
@@ -74,6 +81,7 @@ export class Player extends Creature {
 	
 	onJump() {
 		super.onJump();
+		this.#coyoteTime = 0;
 		this.#isAttacking = true;
 		this.#invulnerability = INITIAL_ATTACK_INVUL;
 	}

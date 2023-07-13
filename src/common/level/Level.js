@@ -86,7 +86,7 @@ export class Level {
 				let eId = null;
 				let et = -1; // TODO: check with level first if physics enabled
 				for (const id1 of checks) {
-					let ct = entity.collide(this.#loaded.get(id1));
+					let ct = entity.collideEntities(this.#loaded.get(id1));
 					if (ct === -1 || ct >= et) continue;
 					et = ct;
 					eId = id1;
