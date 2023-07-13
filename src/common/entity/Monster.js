@@ -1,6 +1,8 @@
 import { Creature } from "./Creature.js";
 import * as QBEntities from "../index/QBEntities.js";
 
+import Vec2 from "../Vec2.js";
+
 const RANDOM_KNOCKBACK_BOUNDARY = 0.01;
 const KNOCKBACK = 0.25;
 
@@ -16,7 +18,7 @@ export class Monster extends Creature {
 		let collided = this.level.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collide(e));
 		if (collided?.hurt(1, this)) {
 			let x = collided.x - this.x;
-			let dy = collided.isOnGround() ? 0.1 : collided.dy;
+			let dy = collided.isOnGround ? 0.1 : collided.dy;
 			if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
 				collided.setVelocity(new Vec2(-KNOCKBACK, dy));
 			} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {

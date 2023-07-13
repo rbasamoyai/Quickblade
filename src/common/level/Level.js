@@ -3,6 +3,8 @@ import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
 import * as LevelChunk from "./LevelChunk.js";
 
+import BiIntMap from "../BiIntMap.js";
+
 const MAX_ITERS = 6;
 
 export class Level {
@@ -13,7 +15,7 @@ export class Level {
 	#loaded = new Map();
 	#camera;
 	snapshots = [];
-	#topLeft;
+	#bottomLeft;
 	#dimensions;
 	
 	constructor(cs, levelGraph) {
@@ -25,7 +27,7 @@ export class Level {
 		let maxX = -Infinity;
 		let maxY = -Infinity;
 		
-		for (const chunk of this.#chunks) {
+		for (const chunk of this.#chunks.values()) {
 			minX = Math.min(minX, chunk.x);
 			minY = Math.min(minY, chunk.y);
 			maxX = Math.max(maxX, chunk.x);
@@ -33,10 +35,10 @@ export class Level {
 		}
 		
 		if (Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY)) {
-			this.#topLeft = [minX, minY];
+			this.#bottomLeft = [minX, minY];
 			this.#dimensions = [maxX - minX + 1, maxY - minY + 1];
 		} else {
-			this.#topLeft = [0, 0];
+			this.#bottomLeft = [0, 0];
 			this.#dimensions = [0, 0];
 		}
 	}
@@ -176,6 +178,22 @@ export class Level {
 		}
 	}
 	
+	getTile(x, y) {
+		let cx = LevelChunk.toChunkSection(x);
+		let cy = LevelChunk.toChunkSection(y);
+		let tx = LevelChunk.toChunkCoord(x);
+		let ty = LevelChunk.toChunkCoord(y);
+		return this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy).getTile(tx, ty) : QBTiles.AIR;
+	}
+	
+	setTile(x, y, tile) {
+		let cx = LevelChunk.toChunkSection(x);
+		let cy = LevelChunk.toChunkSection(y);
+		let tx = LevelChunk.toChunkCoord(x);
+		let ty = LevelChunk.toChunkCoord(y);
+		this.#chunks.get(cx, cy)?.setTile(tx, ty, tile);
+	}
+	
 	render(ctx, dt) {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
@@ -219,12 +237,12 @@ export class Level {
 			ctx.fillStyle = "white";
 			if (this.#camera) {
 				let d = this.#camera.displacement(dt);
-				if (chunk.x === LevelChunk.toChunkSection(d[0]) && chunk.y === LevelChunk.toChunkSection(d[1]))
+				if (chunk.x === LevelChunk.toChunkSection(Math.floor(d.x)) && chunk.y === LevelChunk.toChunkSection(Math.floor(d.y)))
 					ctx.fillStyle = "red";
 			}
 			
-			let x = chunk.x - this.#topLeft[0];
-			let y = chunk.y - this.#topLeft[1];
+			let x = chunk.x - this.#bottomLeft[0];
+			let y = chunk.y - this.#bottomLeft[1];
 			
 			ctx.save();
 			ctx.translate(x + 1, this.#dimensions[1] - y);

@@ -32,3 +32,11 @@ export function counterclockwise(dir) {
 	if (dir < 0) dir = dir % 4 + 4;
 	return (dir + 1) % 4;
 }
+
+export function isVertical(dir) {
+	return dir % 2 === 0;
+}
+
+export function isHorizontal(dir) {
+	return !isVertical(dir);
+}

@@ -1,5 +1,7 @@
 import { Entity, EntityProperties } from "./Entity.js";
 
+import Vec2 from "../Vec2.js";
+
 const DEFAULT_HURT_TIME = 15;
 
 export class Creature extends Entity {
@@ -28,7 +30,7 @@ export class Creature extends Entity {
 		} else if (this.dx > 0) {
 			this.facingRight = true;
 		}
-		if (!this.noGravity && this.isOnGround() && !this.hasImpulse) {
+		if (!this.noGravity && this.isOnGround && !this.hasImpulse) {
 			this.setVelocity(new Vec2(this.dx * this.groundFriction(), this.dy));
 		}
 		this.hasImpulse = false;

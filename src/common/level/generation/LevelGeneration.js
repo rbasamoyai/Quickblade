@@ -8,13 +8,15 @@ import Vec2 from "../../Vec2.js";
 import * as Direction from "../../Direction.js";
 import Triangle from "./Triangle.js";
 import EdgeSet from "./EdgeSet.js";
+import BiIntSet from "../../BiIntSet.js";
+import BiIntMap from "../../BiIntMap.js";
 
 export class LevelGenerator {
 	
 	#nodes = 0;
 	#seed;
 	#rand;
-	#chunks = [];
+	#chunks = new BiIntMap();
 	maxDepth = 3;
 	#levelFeatures = [];
 	#defaultTile;
@@ -77,7 +79,7 @@ export class LevelGenerator {
 		feature.setPos(point.x, point.y);
 		let newProfile = feature.featureProfile();
 		for (const otherFeature of this.#levelFeatures) {
-			if (otherFeature.featureProfile().collideBox(newProfile)) return false;
+			if (otherFeature.featureProfile().intersect(newProfile)) return false;
 		}
 		this.#levelFeatures.push(feature);
 		return true;
@@ -108,15 +110,15 @@ export class LevelGenerator {
 				}
 			}
 			if (!added) break;
-			graph.add(added[0], added[1]);
+			graph.add(...added);
 			featuresIterated.add(added[0]);
 		}
 		
 		// Stage 2: Add non-linearity by adding some of the remaining graph connections.
 		let connectionChance = 0.0625;
 		for (const edge of baseGraph.values()) {
-			if (!graph.has(edge[0], edge[1]) && this.#rand.nextFloat() < connectionChance) {
-				graph.add(edge[0], edge[1]);
+			if (!graph.has(...edge) && this.#rand.nextFloat() < connectionChance) {
+				graph.add(...edge);
 			}
 		}
 		this.#msgLogger(`Shrunk connection count from ${baseGraph.size} to ${graph.size}`);
@@ -128,7 +130,7 @@ export class LevelGenerator {
 		// Implementation of Bowyer-Watson algorithm for Delaunay triangulation from Wikipedia:
 		// https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm
 		let graph = new EdgeSet();
-		if (this.#levelFeatures.size === 0) return graph;
+		if (this.#levelFeatures.length === 0) return graph;
 		let triangles = [];
 		
 		let superTri = this.#makeSuperTriangle();
@@ -147,12 +149,12 @@ export class LevelGenerator {
 			for (const tri of badTriangles) {
 				let edges = tri.allEdges();
 				for (const edge of edges) {
-					if (dupeEdges.has(edge[0], edge[1])) continue;
-					if (polygon.has(edge[0], edge[1])) {
-						dupeEdges.add(edge[0], edge[1]);
-						polygon.delete(edge[0], edge[1]);
+					if (dupeEdges.has(...edge)) continue;
+					if (polygon.has(...edge)) {
+						dupeEdges.add(...edge);
+						polygon.delete(...edge);
 					} else {
-						polygon.add(edge[0], edge[1]);
+						polygon.add(...edge);
 					}
 				}
 				triangles.splice(triangles.indexOf(tri), 1);
@@ -163,30 +165,15 @@ export class LevelGenerator {
 			for (const edge of polygon.values()) {
 				let vert1Id = edge[0];
 				let vert2Id = edge[1];
-				
-				let vert1;
-				if (vert1Id < 0) {
-					vert1 = superTriVerts.get(vert1Id);
-				} else {
-					let assocFeature = this.#levelFeatures[vert1Id];
-					vert1 = new Vec2(assocFeature.x, assocFeature.y);
-				}
-				
-				let vert2;
-				if (vert2Id < 0) {
-					vert2 = superTriVerts.get(vert2Id);
-				} else {
-					let assocFeature = this.#levelFeatures[vert2Id];
-					vert2 = new Vec2(assocFeature.x, assocFeature.y);
-				}
-				
+				let vert1 = vert1Id < 0 ? superTriVerts.get(vert1Id) : this.#levelFeatures[vert1Id].pos;
+				let vert2 = vert2Id < 0 ? superTriVerts.get(vert2Id) : this.#levelFeatures[vert2Id].pos;
 				triangles.push(new Triangle(vert1, vert1Id, vert2, vert2Id, vert3, feature.id));
 			}
 		}
 		
 		for (const tri of triangles) {
 			for (const edge of tri.resolveEdges()) {
-				graph.add(edge[0], edge[1]);
+				graph.add(...edge);
 			}
 		}
 		return graph;
@@ -220,7 +207,7 @@ export class LevelGenerator {
 	}
 	
 	#connectFeatures(graph) {
-		let points = new EdgeSet();
+		let points = new BiIntSet();
 		for (const edge of graph.values()) {
 			let feature1 = this.#levelFeatures[edge[0]];
 			let feature2 = this.#levelFeatures[edge[1]];
@@ -251,7 +238,7 @@ export class LevelGenerator {
 					
 					let tx1 = ox + tx;
 					let ty1 = oy + ty;
-					let tile = QBTiles.getFromIdNum(this.getTile(tx1, ty1));
+					let tile = this.getTile(tx1, ty1);
 					if (tile.replaceable) this.setTile(tx1, ty1, QBTiles.BLOCK);
 				}
 			}
@@ -280,10 +267,7 @@ export class LevelGenerator {
 		let cy = LevelChunk.toChunkSection(y);
 		let tx = LevelChunk.toChunkCoord(x);
 		let ty = LevelChunk.toChunkCoord(y);
-		for (const existing of this.#chunks) {
-			if (existing.x == cx && existing.y == cy) return existing.getTile(tx, ty);
-		}
-		return QBTiles.AIR; 
+		return this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy).getTile(tx, ty) : QBTiles.AIR;
 	}
 	
 	setTile(x, y, tile) {
@@ -291,17 +275,8 @@ export class LevelGenerator {
 		let cy = LevelChunk.toChunkSection(y);
 		let tx = LevelChunk.toChunkCoord(x);
 		let ty = LevelChunk.toChunkCoord(y);
-		
-		for (const existing of this.#chunks) {
-			if (existing.x == cx && existing.y == cy) {
-				existing.setTile(tx, ty, tile);
-				return;
-			}
-		}
-		
-		let newChunk = new LevelChunk.LevelChunk(cx, cy, this.#defaultTile);
-		newChunk.setTile(tx, ty, tile);
-		this.#chunks.push(newChunk);
+		if (!this.#chunks.has(cx, cy)) this.#chunks.set(cx, cy, new LevelChunk.LevelChunk(cx, cy, this.#defaultTile));
+		this.#chunks.get(cx, cy).setTile(tx, ty, tile);
 	}
 	
 }
@@ -324,8 +299,8 @@ class LevelFeature {
 		let thisProfile = this.featureProfile();
 		let otherProfile = otherFeature.featureProfile();
 		
-		let minX = thisProfile.topLeft[0] - otherProfile.width * 0.75;
-		let minY = thisProfile.topLeft[1] - otherProfile.height * 0.75;
+		let minX = thisProfile.bottomLeft.x - otherProfile.width * 0.75;
+		let minY = thisProfile.bottomLeft.y - otherProfile.height * 0.75;
 		let width = thisProfile.width + otherProfile.width * 1.5;
 		let height = thisProfile.height + otherProfile.height * 1.5;
 		
@@ -350,6 +325,7 @@ class LevelFeature {
 	get id() { return this.#id; }
 	
 	setPos(x, y) { this.#pos = new Vec2(x, y); }
+	get pos() { return this.#pos; }
 	get x() { return this.#pos.x; }
 	get y() { return this.#pos.y; }
 	

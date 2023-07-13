@@ -37,7 +37,7 @@ export class LevelChunk {
 	}
 	
 	getTile(tx, ty) {
-		return this.#validateChunkPos(tx, ty) ? this.#tiles[ty][tx] : QBTiles.AIR;
+		return this.#validateChunkPos(tx, ty) ? QBTiles.getFromIdNum(this.#tiles[ty][tx]) : QBTiles.AIR;
 	}
 	
 	setTile(tx, ty, tile) {

@@ -33,15 +33,14 @@ export default class ServerInputHandler {
 		if (!this.#entity?.canControl()) return;
 		let max = 0.5;
 		let newVel = new Vec2(this.#entity.dx, this.#entity.dy);
-		let onGround = this.#entity.isOnGround();
+		let onGround = this.#entity.isOnGround;
 		let flying = this.#entity.noGravity;
 		let cdx = onGround || flying ? 0.05 : 0.025;
 		let modified = false;
 		
 		if (onGround) {
 			if (this.#queuedJump) {
-				let magnitude = Math.sqrt(this.#queuedJump[0] * this.#queuedJump[0] + this.#queuedJump[1] * this.#queuedJump[1]);
-				let k = Math.min(1, MAX_JUMP / magnitude) * INPUT_SCALE;
+				let k = Math.min(1, MAX_JUMP / this.#queuedJump.length()) * INPUT_SCALE;
 				newVel = newVel.addVec(this.#queuedJump.scale(k));
 				modified = true;
 			} else if (!this.#leftImp && !this.#rightImp) {
@@ -84,8 +83,10 @@ export default class ServerInputHandler {
 			this.#entity.setVelocity(newVel);
 			this.#entity.hasImpulse = true;
 		}
-		this.#entity.onJump();
-		this.#queuedJump = null;
+		if (this.#queuedJump) {
+			this.#entity.onJump();
+			this.#queuedJump = null;
+		}
 	}
 	
 }

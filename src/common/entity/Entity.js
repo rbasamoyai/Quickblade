@@ -1,5 +1,7 @@
-import { AABB, collide } from "../Collision.js";
+import { AABB } from "../Collision.js";
 import Vec2 from "../Vec2.js";
+import * as QBTiles from "../index/QBTiles.js";
+import * as Direction from "../Direction.js";
 
 let COUNTER = 0;
 
@@ -19,6 +21,7 @@ export class Entity {
 	#type;
 	removed = false;
 	facingRight = true;
+	isOnGround = false;
 	
 	constructor(x, y, level, id, type) {
 		this.#type = type;
@@ -39,7 +42,7 @@ export class Entity {
 		return {
 			type: "qb:load_entity",
 			id: this.#id,
-			pos: this.#pos.toArray(),
+			pos: this.pos.toArray(),
 			entityType: this.#type.id
 		};
 	}
@@ -50,9 +53,9 @@ export class Entity {
 		return {
 			type: "qb:update_entity",
 			id: this.#id,
-			pos: this.#pos.toArray(),
-			oldPos: this.#oldPos.toArray(),
-			vel: this.#vel.toArray(),
+			pos: this.pos.toArray(),
+			oldPos: this.oldPos.toArray(),
+			vel: this.vel.toArray(),
 			facingRight: this.facingRight
 		};
 	}
@@ -67,41 +70,94 @@ export class Entity {
 	tick() {
 		this.#oldPos = this.#pos;
 		
-		if (!this.noGravity) {
-			this.#vel = new Vec2(this.dx, this.isOnGround() && this.dy <= 0.0001 ? 0 : this.dy - 0.02);
+		if (!this.noGravity && !this.isOnGround) {
+			this.setVelocity(new Vec2(this.dx, this.dy - 0.02));
 		}
 		
-		// Collision
-		
-		// Broad phase: get box from position to dx and do checks
-		
-		
-		
+		this.moveAndCollide();	
 		
 		this.move(this.dx, this.dy);
 	}
 	
 	moveAndCollide() {
+		// Broad phase: get box from position to dx and do checks
+		let aabb = this.getAABB();
+		let testVel = new Vec2(this.dx, this.noGravity ? this.dy : this.dy - 0.02);
+		let broadAABB = aabb.expandTowards(testVel.x, testVel.y);
 		
+		let minX = Math.floor(broadAABB.bottomLeft.x);
+		let minY = Math.floor(broadAABB.bottomLeft.y);
+		let maxX = Math.floor(broadAABB.bottomLeft.x + broadAABB.width);
+		let maxY = Math.floor(broadAABB.bottomLeft.y + broadAABB.height);
+		
+		// First pass: order
+		let results = [];	
+		for (let ty = minY; ty <= maxY; ++ty) {
+			for (let tx = minX; tx <= maxX; ++tx) {
+				let tile = this.#level.getTile(tx, ty);
+				if (!tile.canCollide(this)) continue;
+				let result = aabb.collideBox(new AABB(tx, ty, 1, 1), testVel);
+				if (!result.hit) continue;
+				result.tx = tx;
+				result.ty = ty;
+				results.push(result);
+			}
+		}
+		results.sort(compareHitResults);
+		
+		let ody = this.dy;
+		let revertYVel = true;
+		this.setVelocity(testVel);
+		
+		// Second pass: push
+		let onGround = false;
+		for (const res of results) {
+			let res1 = aabb.collideBox(new AABB(res.tx, res.ty, 1, 1), this.vel);
+			if (!res1.hit || !res1.face && res1.face !== 0) continue;
+			this.pushOff(res.tx, res.ty, res1.face);
+			onGround ||= res1.face === Direction.UP;
+			revertYVel &&= !Direction.isVertical(res1.face);
+		}
+		this.isOnGround = onGround;
+		if (revertYVel) this.setVelocity(new Vec2(this.dx, ody));
 	}
 	
-	isOnGround() {
-		return this.y <= 2; // TODO collision
+	pushOff(tx, ty, face) {
+		switch (face) {
+			case Direction.UP: {
+				this.setPos(new Vec2(this.x, ty + 1));
+				this.setVelocity(new Vec2(this.dx, 0));
+				break;
+			}
+			case Direction.DOWN: {
+				this.setPos(new Vec2(this.x, ty - this.#height));
+				this.setVelocity(new Vec2(this.dx, 0));
+				break;
+			}
+			case Direction.LEFT: {
+				this.setPos(new Vec2(tx - this.#width / 2, this.y));
+				this.setVelocity(new Vec2(0, this.dy));
+				break;
+			}
+			case Direction.RIGHT: {
+				this.setPos(new Vec2(tx + this.#width / 2 + 1, this.y));
+				this.setVelocity(new Vec2(0, this.dy));
+				break;
+			}
+		}
 	}
 	
 	getAABB() {
-		return new AABB(this.x - this.#width / 2, this.y - this.#height, this.#width, this.#height);
+		return new AABB(this.x - this.#width / 2, this.y, this.#width, this.#height);
 	}
 	
 	collide(other) {
 		let hitboxes = this.getHitboxes();
 		let hurtboxes = other.getHurtboxes();
 		
-		let otherVel = [other.dx, other.dy];
-		
 		for (const hitbox of hitboxes) {
 			for (const hurtbox of hurtboxes) {
-				if (collide(hitbox, hurtbox, this.#vel, otherVel)) return true;
+				if (hitbox.collide(hurtbox, this.vel, other.vel).hit) return true;
 			}
 		}
 		return false;
@@ -176,17 +232,20 @@ export class Entity {
 	render(ctx, dt) {
 		ctx.globalAlpha = 0.5;
 		
+		ctx.save();
+		ctx.translate(-this.x, -this.y);
 		ctx.fillStyle = "#009f00";
 		let hitboxes = this.getHitboxes();
 		for (const bb of hitboxes) {
-			ctx.fillRect(bb.topLeft[0] - this.x, bb.topLeft[1] - this.y + bb.height, bb.width, bb.height);
+			ctx.fillRect(bb.bottomLeft.x, bb.bottomLeft.y, bb.width, bb.height);
 		}
 		
 		ctx.fillStyle = this.getFillStyle();
 		let hurtboxes = this.getHurtboxes();
 		for (const bb of hurtboxes) {
-			ctx.fillRect(bb.topLeft[0] - this.x, bb.topLeft[1] - this.y + bb.height, bb.width, bb.height);
+			ctx.fillRect(bb.bottomLeft.x, bb.bottomLeft.y, bb.width, bb.height);
 		}
+		ctx.restore();
 		
 		ctx.fillStyle = "#00ff00";
 		ctx.globalAlpha = 1;
@@ -227,4 +286,10 @@ export class EntityProperties {
 		return this;
 	}
 	
+}
+
+function compareHitResults(a, b) {
+	if (Number.isNaN(a.time) || Number.isNaN(b.time)) return 0;
+	if (a.time < b.time) return -1;
+	return a.time > b.time ? 1 : 0;
 }

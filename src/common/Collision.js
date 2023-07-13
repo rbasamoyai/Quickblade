@@ -1,80 +1,130 @@
+import Vec2 from "./Vec2.js";
+import * as Direction from "./Direction.js";
+
 export class AABB {
 	
-	topLeft;
+	bottomLeft;
 	width;
 	height;
 	
 	constructor(x, y, w, h) {
-		this.topLeft = [x, y];
+		this.bottomLeft = new Vec2(x, y);
 		this.width = w;
 		this.height = h;
 	}
 	
-	collideBox(other) {	
+	centerPoint() {
+		return new Vec2(this.bottomLeft.x + this.width * 0.5, this.bottomLeft.y + this.height * 0.5);
+	}
+	
+	hasPoint(x, y) {
+		return this.bottomLeft.x <= x && x < this.bottomLeft.x + this.width
+			&& this.bottomLeft.y <= y && y < this.bottomLeft.y + this.height;
+	}
+	
+	collideBox(other, thisVel = Vec2.ZERO, otherVel = Vec2.ZERO) {	
+		let mainBox = other.conflate(this);
+		let startPoint = this.centerPoint();
+		let diff = startPoint.subtractVec(mainBox.centerPoint());
+		if (thisVel.subtractVec(otherVel).lengthSqr() < 1e-4) {
+			if (!mainBox.hasPoint(startPoint.x, startPoint.y)) return HitResult.miss();
+			let face = Direction.nearest(diff.x, diff.y);
+			return HitResult.hit(startPoint, 0, face);
+		}
+		
+		let relVelX = thisVel.x - otherVel.x;
+		let relVelY = thisVel.y - otherVel.y;
+		
+		let nearX = (mainBox.bottomLeft.x - startPoint.x) / relVelX;
+		let farX = (mainBox.bottomLeft.x - startPoint.x + mainBox.width) / relVelX;
+		if (Number.isNaN(nearX) || Number.isNaN(farX)) return HitResult.miss();
+		if (farX < nearX) {
+			let tmp = farX;
+			farX = nearX;
+			nearX = tmp;
+		}
+		
+		let nearY = (mainBox.bottomLeft.y - startPoint.y) / relVelY;
+		let farY = (mainBox.bottomLeft.y - startPoint.y + mainBox.height) / relVelY;
+		if (Number.isNaN(nearY) || Number.isNaN(farY)) return HitResult.miss();
+		if (farY < nearY) {
+			let tmp = farY;
+			farY = nearY;
+			nearY = tmp;
+		}
+		
+		if (nearX > farY || nearY > farX) return HitResult.miss();
+		let t = Math.max(nearX, nearY);
+		if (t < 0 || 1 < t) return HitResult.miss();
+		let pos = startPoint.addVec(thisVel.scale(t));
+		if (nearX > nearY) {
+			return HitResult.hit(pos, t, diff.x > 0 ? Direction.RIGHT : Direction.LEFT);
+		} else {
+			return HitResult.hit(pos, t, diff.y > 0 ? Direction.UP : Direction.DOWN);
+		}
+	}
+	
+	intersect(other) {
 		return this.intersectionXOf(other) <= this.width + other.width
 			&& this.intersectionYOf(other) <= this.height + other.height;
 	}
 	
 	intersectionXOf(other) {
-		let minX = Math.min(this.topLeft[0], other.topLeft[0]);
-		let maxX = Math.max(this.topLeft[0] + this.width, other.topLeft[0] + other.width);
+		let minX = Math.min(this.bottomLeft.x, other.bottomLeft.x);
+		let maxX = Math.max(this.bottomLeft.x + this.width, other.bottomLeft.x + other.width);
 		return maxX - minX;
 	}
 	
 	intersectionYOf(other) {
-		let minY = Math.min(this.topLeft[1], other.topLeft[1]);
-		let maxY = Math.max(this.topLeft[1] + this.height, other.topLeft[1] + other.height);
+		let minY = Math.min(this.bottomLeft.y, other.bottomLeft.y);
+		let maxY = Math.max(this.bottomLeft.y + this.height, other.bottomLeft.y + other.height);
 		return maxY - minY;
 	}
 	
 	expandTowards(ex, ey) {
-		let nx = ex < 0 ? this.topLeft[0] + ex : this.topLeft[0];
-		let ny = ey < 0 ? this.topLeft[1] + ey : this.topLeft[1];
-		let nw = ex > 0 ? this.width + ex : this.width;
-		let nh = ey > 0 ? this.height + ey : this.height;
+		let nx = ex < 0 ? this.bottomLeft.x + ex : this.bottomLeft.x;
+		let ny = ey < 0 ? this.bottomLeft.y + ey : this.bottomLeft.y;
+		let nw = this.width + Math.abs(ex);
+		let nh = this.height + Math.abs(ey);
 		return new AABB(nx, ny, nw, nh);
 	}
 	
+	inflate(x, y) {
+		return new AABB(this.bottomLeft.x - x, this.bottomLeft.y - y, this.width + x + x, this.height + y + y);
+	}
+	
+	inflateAll(s) { return this.inflate(s, s); }
+	
+	conflate(other) {
+		return this.inflate(other.width * 0.5, other.height * 0.5);
+	}
+	
 	move(x, y) {
-		return new AABB(this.topLeft[0] + x, this.topLeft[1] + y, this.width, this.height);
+		return new AABB(this.bottomLeft.x + x, this.bottomLeft.y + y, this.width, this.height);
 	}
 
 }
 
-export function collide(bb1, bb2, vel1, vel2) {
-	let relVel = [1 / (vel1[0] - vel2[0]), 1 / (vel1[1] - vel2[1])];
-		
-	let startX = bb2.topLeft[0] - bb1.topLeft[0];
-	let x1 = (startX - bb1.width) * relVel[0];
-	let x2 = (startX + bb2.width) * relVel[0];
-	if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2)) {
-		let minX = Math.min(bb1.topLeft[0], bb2.topLeft[0]);
-		let maxX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width);
-		if (maxX - minX > bb1.width + bb2.width) return false;
-	}
-	if (x1 > x2) {
-		let tmp = x1;
-		x1 = x2;
-		x2 = tmp;
-	}
-	x1 = Math.max(0, x1);
-	x2 = Math.min(1, x2);
+export class HitResult {
 	
-	let startY = bb2.topLeft[1] - bb1.topLeft[1];
-	let y1 = (startY - bb1.height) * relVel[1];
-	let y2 = (startY + bb2.height) * relVel[1];
-	if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2)) {
-		let minY = Math.min(bb1.topLeft[1], bb2.topLeft[1]);
-		let maxY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height);
-		if (maxY - minY > bb1.height + bb2.height) return false;
-	}
-	if (y1 > y2) {
-		let tmp = y1;
-		y1 = y2;
-		y2 = tmp;
-	}
-	y1 = Math.max(0, y1);
-	y2 = Math.min(1, y2);
+	#hit;
+	#pos;
+	#time;
+	#face;
 	
-	return x1 <= y2 && y1 <= x2; //? Math.max(x1, y1) : -1;
+	constructor(hit, pos, time, face) {
+		this.#hit = hit;
+		this.#pos = pos;
+		this.#time = time;
+		this.#face = face;
+	}
+	
+	get hit() { return this.#hit; }
+	get pos() { return this.#pos; }
+	get time() { return this.#time; }
+	get face() { return this.#face; }
+	
+	static miss() { return new HitResult(false); }
+	static hit(pos, time, face) { return new HitResult(true, pos, time, face); }
+	
 }

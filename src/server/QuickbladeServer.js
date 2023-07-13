@@ -36,13 +36,18 @@ const levelSeed = 1;
 const levelGenerator = new LevelGenerator(levelSeed);
 const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
 
-postMessage({ type: "qb:expected_chunk_count", count: serverLevel.getAllChunks().length });
-serverLevel.getAllChunks().forEach(chunk => postMessage(chunk.serialize()));
+{
+	let chunks = serverLevel.getAllChunks();
+	postMessage({ type: "qb:expected_chunk_count", count: chunks.size });
+	for (const chunk of chunks.values()) {
+		postMessage(chunk.serialize());
+	}
+}
 
 let updateControl = null;
 
 let controlledEntity = QBEntities.PLAYER.create(4, 2, serverLevel);
-controlledEntity.noGravity = true;
+//controlledEntity.noGravity = true;
 serverLevel.addTicked(controlledEntity);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 

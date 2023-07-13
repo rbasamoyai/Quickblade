@@ -2,6 +2,8 @@ import { Creature } from "./Creature.js";
 import { Monster } from "./Monster.js";
 import { AABB } from "../Collision.js";
 
+import Vec2 from "../Vec2.js";
+
 const INITIAL_ATTACK_INVUL = 3;
 const RANDOM_KNOCKBACK_BOUNDARY = 0.01;
 const KNOCKBACK = 0.5;
@@ -42,7 +44,7 @@ export class Player extends Creature {
 	tick() {
 		super.tick();
 		
-		if (!this.noGravity && this.isOnGround()) {
+		if (!this.noGravity && this.isOnGround) {
 			this.#isAttacking = false;
 			this.#invulnerability = 0;
 		}
@@ -51,7 +53,7 @@ export class Player extends Creature {
 			let collided = this.level.getEntities().filter(e => e instanceof Monster).find(e => this.collide(e));
 			if (collided?.hurt(1, this)) {
 				let x = collided.x - this.x;
-				let dy = collided.isOnGround() ? 0.1 : collided.dy;
+				let dy = collided.isOnGround ? 0.1 : collided.dy;
 				if (x < -RANDOM_KNOCKBACK_BOUNDARY) {
 					collided.setVelocity(new Vec2(-KNOCKBACK, dy));
 				} else if (x > RANDOM_KNOCKBACK_BOUNDARY) {
@@ -67,7 +69,7 @@ export class Player extends Creature {
 	getHitboxes() {
 		if (!this.#isAttacking) return [];
 		let sx = this.facingRight ? this.x + 0.5 : this.x - 2.5;
-		return [new AABB(sx, this.y - 2, 2, 2)];
+		return [new AABB(sx, this.y, 2, 2)];
 	}
 	
 	onJump() {
