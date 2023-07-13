@@ -3,6 +3,7 @@ import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
 import * as LevelChunk from "./LevelChunk.js";
 
+import Vec2 from "../Vec2.js";
 import BiIntMap from "../BiIntMap.js";
 
 const MAX_ITERS = 6;
@@ -10,7 +11,7 @@ const MAX_ITERS = 6;
 export class Level {
 
 	#chunks;
-	#levelGraph;
+	#paddingChunk;
 	
 	#loaded = new Map();
 	#camera;
@@ -18,9 +19,9 @@ export class Level {
 	#bottomLeft;
 	#dimensions;
 	
-	constructor(cs, levelGraph) {
+	constructor(cs, chunkPaddingTile = QBTiles.BACK_WALL) {
 		this.#chunks = cs;
-		this.#levelGraph = levelGraph;
+		this.#paddingChunk = new LevelChunk.LevelChunk(0, 0, chunkPaddingTile);
 		
 		let minX = Infinity;
 		let minY = Infinity;
@@ -194,30 +195,37 @@ export class Level {
 		this.#chunks.get(cx, cy)?.setTile(tx, ty, tile);
 	}
 	
-	render(ctx, dt) {
+	render(ctx, dt, scale) {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
 		
-		let curCX = -1;
-		let curCY = -1;
+		let minCX = -1;
+		let minCY = -1;
+		let maxCX = 1;
+		let maxCY = 1;
 		if (this.#camera) {
-			this.#camera.lerp(ctx, dt);
-			curCX = LevelChunk.toChunkSection(this.#camera.x) - 1;
-			curCY = LevelChunk.toChunkSection(this.#camera.y) - 1;
+			this.#camera.lerp(ctx, dt, scale);
+			let bounds = this.#camera.bounds(dt);
+			minCX = bounds.minCX;
+			minCY = bounds.minCY;
+			maxCX = bounds.maxCX;
+			maxCY = bounds.maxCY;
 		}
 		
-		for (const chunk of this.#chunks) {
-			if (!LevelChunk.chunkInRange(chunk, curCX, curCY, curCX + 3, curCY + 3)) continue;
-			ctx.save();
-			ctx.transform(1, 0, 0, 1, chunk.x * LevelChunk.CHUNK_SIZE, chunk.y * LevelChunk.CHUNK_SIZE);
-			chunk.render(ctx, dt);
-			ctx.restore();
+		for (let cy = minCY; cy <= maxCY; ++cy) {
+			for (let cx = minCX; cx <= maxCX; ++cx) {
+				ctx.save();
+				ctx.transform(1, 0, 0, 1, cx * LevelChunk.CHUNK_SIZE, cy * LevelChunk.CHUNK_SIZE);
+				let chunk = this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy) : this.#paddingChunk;
+				chunk.render(ctx, dt);
+				ctx.restore();
+			}
 		}
 		
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
-			let s = entity.displacement(dt);
-			ctx.translate(s.x, s.y);
+			let d = entity.displacement(dt, scale);
+			ctx.translate(d.x, d.y);
 			entity.render(ctx, dt);
 			ctx.restore();
 		}
@@ -233,7 +241,7 @@ export class Level {
 		
 		ctx.fillRect(0, 0, this.#dimensions[0] + 2, this.#dimensions[1] + 2);
 		
-		for (const chunk of this.#chunks) {			
+		for (const chunk of this.#chunks.values()) {			
 			ctx.fillStyle = "white";
 			if (this.#camera) {
 				let d = this.#camera.displacement(dt);

@@ -22,6 +22,9 @@ import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
+import BiIntMap from "../common/BiIntMap.js";
+import Vec2 from "../common/Vec2.js";
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
@@ -39,7 +42,7 @@ let gameState = RENDER_LOADING_SCREEN;
 let controlledEntity = null;
 
 let expectedChunkCount = -1;
-let loadChunks = [];
+let loadChunks = new BiIntMap();
 let levelGraph = null;
 let clientLevel = null;
 
@@ -52,7 +55,7 @@ worker.onmessage = evt => {
 			break;
 		}
 		case "qb:load_chunk": {
-			loadChunks.push(new LevelChunk(evt.data.x, evt.data.y, QBTiles.AIR, evt.data.tiles));
+			loadChunks.set(evt.data.x, evt.data.y, new LevelChunk(evt.data.x, evt.data.y, QBTiles.AIR, evt.data.tiles));
 			trySettingReady();
 			break;
 		}
@@ -99,7 +102,7 @@ let lastTickMs = new Date().getTime();
 let stopped = false;
 
 function trySettingReady() {
-	if (expectedChunkCount !== loadChunks.length) return;
+	if (expectedChunkCount !== loadChunks.size) return;
 	clientLevel = new Level(loadChunks);
 	clientLevel.setCamera(camera);
 	expectedChunkCount = -1;
@@ -123,7 +126,7 @@ function mainRender() {
 		ctx.translate(0, -15);
 
 		ctx.save();
-		clientLevel.render(ctx, dt);	
+		clientLevel.render(ctx, dt, SCALE);	
 		ctx.restore();
 		
 		if (tracked) {
@@ -132,12 +135,12 @@ function mainRender() {
 			ctx.lineWidth = 0.125;
 			
 			ctx.save();
-			let ds = tracked.displacement(dt);
+			let d = tracked.displacement(dt, SCALE);
 			let dmx = mouseX * 16 - 8;
 			let dmy = mouseY * -15 + 8;
 			
-			camera.lerp(ctx, dt);
-			ctx.translate(ds.x, ds.y);
+			camera.lerp(ctx, dt, SCALE);
+			ctx.translate(d.x, d.y);
 			
 			ctx.beginPath();
 			ctx.moveTo(0, 0);

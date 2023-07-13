@@ -266,7 +266,7 @@ export class Entity {
 	
 	getFillStyle() { return "#ff9f9f"; }
 	
-	displacement(dt) {
+	displacement(dt, snapScale) {
 		/* let sx = this.x;
 		let sy = this.y;
 		for (const seg of this.#path) {
@@ -276,7 +276,9 @@ export class Entity {
 			sy += seg.vel[1] * dt;
 		}
 		return [sx, sy]; */
-		return this.#oldPos.addVec(this.#pos.subtractVec(this.#oldPos).scale(dt));
+		let d = this.#oldPos.addVec(this.#pos.subtractVec(this.#oldPos).scale(dt));
+		if (!snapScale) return d;
+		return new Vec2(Math.floor(d.x * snapScale), Math.floor(d.y * snapScale)).scale(1 / snapScale);
 	}
 	
 }
