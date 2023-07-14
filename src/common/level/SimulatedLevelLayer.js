@@ -29,6 +29,11 @@ export default class SimulatedLevelLayer extends LevelLayer {
 			entity.tick();
 			if (entity.removed) {
 				removed.push(id);
+				this.#snapshots.push({
+					type: "qb:remove_entity",
+					id: id,
+					layer: this.depth
+				});
 			} else {
 				this.#snapshots.push(entity.getUpdateSnapshot());
 			}

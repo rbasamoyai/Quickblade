@@ -233,10 +233,6 @@ export class Entity {
 
 	kill() {
 		this.removed = true;
-		this.#level.snapshots.push({
-			type: "qb:remove_entity",
-			id: this.#id
-		});
 	}
 	
 	isInvulnerable(attacker) { return false; }
