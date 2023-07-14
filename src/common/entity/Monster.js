@@ -8,15 +8,15 @@ const KNOCKBACK = 0.25;
 
 export class Monster extends Creature {
 	
-	constructor(x, y, level, id, type) {
-		super(x, y, level, id, type);
+	constructor(x, y, level, layer, id, type) {
+		super(x, y, level, layer, id, type);
 	}
 	
 	tick() {
 		super.tick();
 		
 		// TODO: infighting?
-		let collided = this.level.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collide(e));
+		let collided = this.layer.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collideWithEntity(e));
 		if (collided?.hurt(1, this)) {
 			let x = collided.x - this.x;
 			let dy = collided.isOnGround() ? 0.1 : collided.dy;

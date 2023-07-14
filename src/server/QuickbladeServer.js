@@ -1,11 +1,11 @@
 import ServerInputHandler from "./ServerInputHandler.js";
-import { Level } from "../common/level/Level.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
-import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
+import LevelGenerator from "../common/level/generation/LevelGenerator.js";
 
+import logMessage from "../common/Logging.js";
 import Vec2 from "../common/Vec2.js";
 
 const input = new ServerInputHandler();
@@ -24,7 +24,7 @@ onmessage = evt => {
 		}
 		case "qb:client_ready": {
 			clientReady = true;
-			console.log("Client ready, server starting.");
+			logMessage("Client ready, server starting.");
 			break;
 		}
 	}
@@ -33,30 +33,46 @@ onmessage = evt => {
 const TICK_TARGET = 30;
 
 const levelSeed = 1;
-const levelGenerator = new LevelGenerator(levelSeed);
+const levelGenerator = new LevelGenerator(levelSeed, logMessage);
 const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
 
 {
-	let chunks = serverLevel.getAllChunks();
-	postMessage({ type: "qb:expected_chunk_count", count: chunks.size });
-	for (const chunk of chunks.values()) {
-		postMessage(chunk.serialize());
+	let layers = serverLevel.getAllLayers();
+	
+	let serializedLayers = [];
+	for (const [depth, layer] of layers.entries()) {
+		serializedLayers.push([depth, layer.getLayerData()]);
+	}
+	postMessage({ type: "qb:expected_level_data", layers: serializedLayers });
+	
+	let p = 0;
+	for (const [depth, layer] of layers.entries()) {
+		for (const [pos, chunk] of layer.getAllChunks().entries()) {
+			postMessage({
+				type: "qb:load_level_data_packet",
+				layer: depth,
+				x: pos[0],
+				y: pos[1],
+				tiles: chunk.getAllTiles()
+			});
+		}
 	}
 }
 
 let updateControl = null;
 
-let controlledEntity = QBEntities.PLAYER.create(4, 2, serverLevel);
+let mainLayer = serverLevel.getLayer(0);
+let controlledEntity = QBEntities.PLAYER.create(0, 2, serverLevel, mainLayer);
 //controlledEntity.noGravity = true;
-serverLevel.addTicked(controlledEntity);
+serverLevel.addTicked(controlledEntity, 0);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 
 input.setEntity(controlledEntity);
 updateControl = controlledEntity.id;
 
-//let otherEntity = QBEntities.IMP.create(8, 2, serverLevel);
-//serverLevel.addTicked(otherEntity);
-//serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+serverLevel.addTicked(otherEntity, 0);
+serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 
 let stopped = false;
 
@@ -71,7 +87,7 @@ function mainloop() {
 		postMessage({
 			type: "qb:update_client",
 			time: Date.now(),
-			entityData: serverLevel.snapshots
+			entityData: [...serverLevel.snapshots]
 		});
 		serverLevel.snapshots.splice(0, serverLevel.snapshots.length);
 		if (updateControl || updateControl == 0) {

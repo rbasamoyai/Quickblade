@@ -67,17 +67,12 @@ export class LevelChunk {
 	get x() { return this.#pos[0]; }
 	get y() { return this.#pos[1]; }
 	
-	serialize() {
+	getAllTiles() {
 		let data = [];
 		for (let ty = 0; ty < CHUNK_SIZE; ++ty) {
 			data.push(...this.#tiles[ty]);
 		}
-		return {
-			type: "qb:load_chunk",
-			x: this.x,
-			y: this.y,
-			tiles: data
-		};
+		return data;
 	}
 	
 }

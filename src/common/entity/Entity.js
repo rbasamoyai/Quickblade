@@ -14,6 +14,7 @@ export class Entity {
 	#vel;
 	//#path = new Timeline();
 	#level;
+	#layer;
 	#id;
 	#width;
 	#height;
@@ -23,7 +24,7 @@ export class Entity {
 	removed = false;
 	facingRight = true;
 	
-	constructor(x, y, level, id, type) {
+	constructor(x, y, level, layer, id, type) {
 		this.#type = type;
 		this.#width = type.properties.width;
 		this.#height = type.properties.height;
@@ -35,15 +36,17 @@ export class Entity {
 		//this.newPath();
 		
 		this.#level = level;
+		this.#layer = layer;
 		this.#id = id ? id : COUNTER++;
 	}
 	
 	getLoadSnapshot() {
 		return {
 			type: "qb:load_entity",
-			id: this.#id,
+			id: this.id,
 			pos: this.pos.toArray(),
-			entityType: this.#type.id
+			entityType: this.#type.id,
+			layer: this.layer.depth
 		};
 	}
 	
@@ -52,11 +55,12 @@ export class Entity {
 	getUpdateSnapshot() {
 		return {
 			type: "qb:update_entity",
-			id: this.#id,
+			id: this.id,
 			pos: this.pos.toArray(),
 			oldPos: this.oldPos.toArray(),
 			vel: this.vel.toArray(),
-			facingRight: this.facingRight
+			facingRight: this.facingRight,
+			layer: this.layer.depth
 		};
 	}
 	
@@ -95,7 +99,7 @@ export class Entity {
 		let results = [];	
 		for (let ty = minY; ty <= maxY; ++ty) {
 			for (let tx = minX; tx <= maxX; ++tx) {
-				let tile = this.#level.getTile(tx, ty);
+				let tile = this.layer.getTile(tx, ty);
 				if (!tile.canCollide(this)) continue;
 				let result = aabb.collideBox(new AABB(tx, ty, 1, 1), testVel);
 				if (!result.hit) continue;
@@ -152,7 +156,7 @@ export class Entity {
 		return new AABB(this.x - this.#width / 2, this.y, this.#width, this.#height);
 	}
 	
-	collideEntities(other) {
+	collideWithEntity(other) {
 		let hitboxes = this.getHitboxes();
 		let hurtboxes = other.getHurtboxes();
 		
@@ -220,6 +224,8 @@ export class Entity {
 	} */
 	
 	get level() { return this.#level; }
+	get layer() { return this.#layer; }
+	setLayer(layer) { this.#layer = layer; }
 	
 	get type() { return this.#type; }
 	

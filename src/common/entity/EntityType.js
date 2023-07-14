@@ -10,8 +10,8 @@ export default class EntityType {
 		this.#id = id;
 	}
 	
-	create(x, y, level, id) {
-		return new this.#provider(x, y, level, id, this);
+	create(x, y, level, layer, id) {
+		return new this.#provider(x, y, level, layer, id, this);
 	}
 	
 	get id() { return this.#id; }

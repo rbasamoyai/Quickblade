@@ -11,8 +11,8 @@ export class Creature extends Entity {
 	hurtTime = 0;
 	hasImpulse = false;
 	
-	constructor(x, y, level, id, type) {
-		super(x, y, level, id, type);
+	constructor(x, y, level, layer, id, type) {
+		super(x, y, level, layer, id, type);
 		this.#maxHp = type.properties.maxHp;
 		this.#hp = this.#maxHp;
 	}

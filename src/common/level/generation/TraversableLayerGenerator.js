@@ -1,9 +1,9 @@
-import { Level } from "../Level.js";
-import * as LevelChunk from "../LevelChunk.js";
+import AbstractLevelLayerGenerator from "./AbstractLevelLayerGenerator.js";
+import SimulatedLevelLayer from "../SimulatedLevelLayer.js";
+
 import * as QBTiles from "../../index/QBTiles.js";
 import { AABB } from "../../Collision.js";
 
-import QBRandom from "../../QBRandom.js";
 import Vec2 from "../../Vec2.js";
 import * as Direction from "../../Direction.js";
 import Triangle from "./Triangle.js";
@@ -11,51 +11,42 @@ import EdgeSet from "./EdgeSet.js";
 import BiIntSet from "../../BiIntSet.js";
 import BiIntMap from "../../BiIntMap.js";
 
-export class LevelGenerator {
-	
+export default class TraversableLayerGenerator extends AbstractLevelLayerGenerator {
+
 	#nodes = 0;
-	#seed;
-	#rand;
-	#chunks = new BiIntMap();
-	maxDepth = 3;
 	#levelFeatures = [];
-	#defaultTile;
-	#msgLogger;
 	
-	constructor(seed, msgLogger = console.log, defaultTile = QBTiles.BACK_WALL) {
-		this.#seed = seed ? seed : Date.now();
-		this.#rand = new QBRandom(seed);
-		this.#defaultTile = defaultTile;
-		this.#msgLogger = msgLogger;
+	constructor(rand, msgLogger, defaultTile = QBTiles.BACK_WALL) {
+		super(rand, msgLogger, defaultTile);
 	}
 	
-	generateLevel() {
+	generateLayer(depth, motionScale, visualScale = 1) {
 		this.#addRoomsToGenerate();		
-		this.#msgLogger(`Generating ${this.#levelFeatures.length} rooms...`);
+		this.msgLogger(`Generating ${this.#levelFeatures.length} rooms for depth ${depth}...`);
 		
-		this.#msgLogger(`Connecting rooms...`);
+		this.msgLogger(`Connecting rooms...`);
 		let graph = this.#connectRoomsToEachOther();
 		
 		// for (const edge of graph.values()) this.#msgLogger(edge);
 		
-		this.#msgLogger(`Constructing rooms...`);
+		this.msgLogger(`Constructing rooms...`);
 		for (const feature of this.#levelFeatures) {
-			feature.generateFeature(this.#rand, this);
+			feature.generateFeature(this.rand, this);
 		}
 		
-		this.#msgLogger(`Connecting rooms...`);
+		this.msgLogger(`Connecting rooms...`);
 		this.#connectFeatures(graph);
 		
-		// Chunks are padded out so as to hide open air.
+		// Generate background.
 		
 		// Add entities.
 		
-		return new Level(this.#chunks);
+		return new SimulatedLevelLayer(this.chunks, depth, motionScale, this.defaultTile, visualScale);
 	}
 	
 	#addRoomsToGenerate() {
-		let roomCount = this.#rand.nextInt(23, 32);
-		let start = new ChamberFeature(0, this.#rand, 0, 0);
+		let roomCount = this.rand.nextInt(23, 32);
+		let start = new ChamberFeature(0, this.rand, 0, 0);
 		this.#levelFeatures.push(start);
 		
 		let p = 0;
@@ -64,9 +55,9 @@ export class LevelGenerator {
 			let len = this.#levelFeatures.length;
 			
 			// TODO: Add more features and pick a feature from a pool.
-			let newFeature = new ChamberFeature(len, this.#rand, 0, 0);
+			let newFeature = new ChamberFeature(len, this.rand, 0, 0);
 			
-			let oldFeature = this.#levelFeatures[this.#rand.nextInt(0, len)];
+			let oldFeature = this.#levelFeatures[this.rand.nextInt(0, len)];
 			
 			for (let i = 0; i < 3; ++i) {
 				if (this.#tryPlacingRoomAroundOther(newFeature, oldFeature)) break;
@@ -75,7 +66,7 @@ export class LevelGenerator {
 	}
 	
 	#tryPlacingRoomAroundOther(feature, oldFeature) {		
-		let point = oldFeature.getPointForFeature(this.#rand, feature);
+		let point = oldFeature.getPointForFeature(this.rand, feature);
 		feature.setPos(point.x, point.y);
 		let newProfile = feature.featureProfile();
 		for (const otherFeature of this.#levelFeatures) {
@@ -90,7 +81,7 @@ export class LevelGenerator {
 		let graph = new EdgeSet();
 		
 		// Stage 1: Minimum Spanning Tree via Prim's algorithm
-		let featuresIterated = new Set([this.#rand.nextInt(0, this.#levelFeatures.length)]);
+		let featuresIterated = new Set([this.rand.nextInt(0, this.#levelFeatures.length)]);
 		while (featuresIterated.size < this.#levelFeatures.length) {
 			let added = null;
 			let distSqr = Infinity;
@@ -117,11 +108,11 @@ export class LevelGenerator {
 		// Stage 2: Add non-linearity by adding some of the remaining graph connections.
 		let connectionChance = 0.0625;
 		for (const edge of baseGraph.values()) {
-			if (!graph.has(...edge) && this.#rand.nextFloat() < connectionChance) {
+			if (!graph.has(...edge) && this.rand.nextFloat() < connectionChance) {
 				graph.add(...edge);
 			}
 		}
-		this.#msgLogger(`Shrunk connection count from ${baseGraph.size} to ${graph.size}`);
+		//this.msgLogger(`Shrunk connection count from ${baseGraph.size} to ${graph.size}`);
 		
 		return graph;
 	}
@@ -261,24 +252,7 @@ export class LevelGenerator {
 		}
 		
 	}
-	
-	getTile(x, y) {
-		let cx = LevelChunk.toChunkSection(x);
-		let cy = LevelChunk.toChunkSection(y);
-		let tx = LevelChunk.toChunkCoord(x);
-		let ty = LevelChunk.toChunkCoord(y);
-		return this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy).getTile(tx, ty) : QBTiles.AIR;
-	}
-	
-	setTile(x, y, tile) {
-		let cx = LevelChunk.toChunkSection(x);
-		let cy = LevelChunk.toChunkSection(y);
-		let tx = LevelChunk.toChunkCoord(x);
-		let ty = LevelChunk.toChunkCoord(y);
-		if (!this.#chunks.has(cx, cy)) this.#chunks.set(cx, cy, new LevelChunk.LevelChunk(cx, cy, this.#defaultTile));
-		this.#chunks.get(cx, cy).setTile(tx, ty, tile);
-	}
-	
+
 }
 
 class LevelFeature {

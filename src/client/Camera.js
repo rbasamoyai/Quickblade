@@ -5,8 +5,10 @@ export default class Camera {
 
 	#pos = Vec2.ZERO;
 	#oldPos = Vec2.ZERO;
+	layer;
 
-	constructor() {
+	constructor(initialLayer = 0) {
+		this.layer = initialLayer;
 	}
 	
 	setState(pos, oldPos) {
@@ -37,5 +39,6 @@ export default class Camera {
 	
 	get x() { return this.#pos.x; }
 	get y() { return this.#pos.y; }
+	
 	
 }

@@ -2,267 +2,122 @@ import { Entity } from "../entity/Entity.js";
 import * as QBEntities from "../index/QBEntities.js";
 import * as QBTiles from "../index/QBTiles.js";
 import * as LevelChunk from "./LevelChunk.js";
+import SimulatedLevelLayer from "./SimulatedLevelLayer.js";
 
 import Vec2 from "../Vec2.js";
 import BiIntMap from "../BiIntMap.js";
 
 const MAX_ITERS = 6;
 
-export class Level {
+export default class Level {
 
-	#chunks;
-	#paddingChunk;
+	#layers;
 	
-	#loaded = new Map();
 	#camera;
-	snapshots = [];
 	#bottomLeft;
 	#dimensions;
+	#loaded = new Map();
+	snapshots = [];
 	
-	constructor(cs, chunkPaddingTile = QBTiles.BACK_WALL) {
-		this.#chunks = cs;
-		this.#paddingChunk = new LevelChunk.LevelChunk(0, 0, chunkPaddingTile);
-		
-		let minX = Infinity;
-		let minY = Infinity;
-		let maxX = -Infinity;
-		let maxY = -Infinity;
-		
-		for (const chunk of this.#chunks.values()) {
-			minX = Math.min(minX, chunk.x);
-			minY = Math.min(minY, chunk.y);
-			maxX = Math.max(maxX, chunk.x);
-			maxY = Math.max(maxY, chunk.y);
-		}
-		
-		if (Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY)) {
-			this.#bottomLeft = [minX, minY];
-			this.#dimensions = [maxX - minX + 1, maxY - minY + 1];
-		} else {
-			this.#bottomLeft = [0, 0];
-			this.#dimensions = [0, 0];
+	constructor(layers) {
+		this.#layers = layers;
+		for (const layer of this.#layers.values()) {
+			layer.setLevel(this);
 		}
 	}
 	
 	tick() {
-		let d = new Date();
-		let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-		//console.log(`${s} Ticking ${this.#loaded.size} entities`);
-		
-		this.#loaded.forEach((entity, id, m) => {
-			/* let disp = entity.displacement(1);
-			entity.setPos(disp[0], disp[1]);
-			entity.newPath(); */
-			
-			entity.tick();
-			if (!entity.removed) this.snapshots.push(entity.getUpdateSnapshot());
-		});
-		this.#loaded.forEach((entity, id, m) => {
-			if (entity.removed) this.#loaded.delete(id);
-		});
-		
-		let startTime = 0;
-		
-		/*for (let i = 0; i < MAX_ITERS; ++i) {
-			
-			let movementBoxes = new Map();
-			let dt = 1 - startTime;
-			
-			this.#loaded.forEach((entity, id, m) => {
-				let disp = entity.displacement(startTime);
-				movementBoxes.put(id, entity.getAABB().move(disp[0], disp[1]).expandTowards(entity.dx * dt, entity.dy * dt));
-			});
-			
-			let checkmap = new Map();
-			movementBoxes.forEach((box, id, m) => {
-				checkmap.set(id, []);
-				movementBoxes.forEach((box1, id1, m1) => {
-					if (id !== id1 && box.collideBox(box1)) checkmap.get(id).push(id1);
-				});
-			});
-			
-			let earliestCollisionTimes = new Map();		
-			checkmap.forEach((checks, id, m) => {
-				let entity = this.#loaded.get(id);
-				let eId = null;
-				let et = -1; // TODO: check with level first if physics enabled
-				for (const id1 of checks) {
-					let ct = entity.collideEntities(this.#loaded.get(id1));
-					if (ct === -1 || ct >= et) continue;
-					et = ct;
-					eId = id1;
-				}
-				if (et !== -1) earliestCollisionTimes.set(id, { withId: eId, time: et });
-			});
-			
-			let aTimes = [];
-			for (const entry of earliestCollisionTimes.entries()) {
-				aTimes.push(entry);
-			}
-			aTimes.sort((a, b) => (a[1].time > b[1].time) - (a[1].time < b[1].time));
-			
-			let etFinal = null;
-			for (const et of aTimes) {
-				let entity = this.#loaded.get(et[0]);
-				if (!entity) continue;
-				if (!et[1].withId && entity.onCollideLevel()) {
-					etFinal = et;
-					break;
-				}
-				let other = this.#loaded.get(et[1].withId);
-				if (other && entity.onCollideEntity(other)) {
-					etFinal = et;
-					break;
-				}
-			}
-			if (!etFinal) break;
-			startTime = etFinal[1].time;
-			
-			let affected = this.#loaded.get(etFinal[0]);
-			if (affected) {
-				affected.updatePath(startTime);
-			}
-		}*/
-		
-		
+		for (const layer of this.#layers.values()) {
+			layer.tick();
+			if (layer instanceof SimulatedLevelLayer) layer.addSnapshots(this.snapshots);
+		}
 	}
 	
-	getEntities() {
+	// TODO: layers and entities
+	
+	getEntities(checkDepth) {
+		if (checkDepth) {
+			let layer = this.getLayer(checkDepth);
+			return layer instanceof SimulatedLevelLayer ? [...layer.getEntities()] : [];
+		}
 		let entities = [];
-		for (const entity of this.#loaded.values()) {
-			entities.push(entity);
+		for (const layer of this.#layers.values()) {
+			if (layer instanceof SimulatedLevelLayer) entities.push(...layer.getEntities());
 		}
 		return entities;
 	}
 	
-	getEntitiesMatching(pred) { return this.getEntities().filter(pred); }	
-	getEntitiesIn(aabb) { return this.getEntitiesMatching(e => e.getAABB().collideBox(aabb)); }
+	getEntitiesMatching(pred, checkDepth) { return this.getEntities(checkDepth).filter(pred); }	
+	getEntitiesIn(aabb, checkDepth) { return this.getEntitiesMatching(e => e.getAABB().collideBox(aabb), checkDepth); }
 	
-	addTicked(entity) { this.#loaded.set(entity.id, entity); }
-	removeTicked(entity) { this.#loaded.delete(entity.id); }
-	getEntityById(id) { return this.#loaded.get(id); }
+	addTicked(entity, depth) {
+		let layer = this.getLayer(depth);
+		if (layer instanceof SimulatedLevelLayer) layer.addTicked(entity);
+	}
+	
+	removeTicked(entity) {
+		for (const layer of this.#layers.values()) {
+			if (layer instanceof SimulatedLevelLayer) layer.removeTicked(entity);
+		}
+	}
+	
+	getEntityById(id) {
+		for (const layer of this.#layers.values()) {
+			if (!(layer instanceof SimulatedLevelLayer)) continue;
+			let e = layer.getEntityById(id);
+			if (e) return e;
+		}
+		return null;
+	}
 	
 	loadEntities(entityData) {
 		for (const data of entityData) {
-			switch (data.type) {
-				case "qb:load_entity": {	
-					let d = new Date();
-					let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-					console.log(`${s} Loading entity with id ${data.id} on client`);
-					let type = QBEntities.getFromId(data.entityType);
-					if (type) {
-						let newEntity = type.create(data.pos[0], data.pos[1], this, data.id);
-						this.addTicked(newEntity);
-					} else {
-						s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-						console.log(`${s} Error loading entity with id ${data.id} on client: Invalid type ${data.entityType}`);
-					}
-					break;
-				}
-				case "qb:update_entity": {
-					let entity = this.getEntityById(data.id);
-					if (entity) entity.readUpdateSnapshot(data);
-					break;
-				}
-				case "qb:remove_entity": {
-					let entity1 = this.getEntityById(data.id);
-					if (entity1) {
-						this.removeTicked(entity1);
-						entity1.removed = true;
-						let d = new Date();
-						let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-						console.log(`${s} Killed entity with id ${data.id} on client`);
-					}
-					break;
-				}
-			}
+			let layer = this.getLayer(data.layer);
+			if (layer instanceof SimulatedLevelLayer) layer.loadEntity(data);
 		}
 	}
 	
-	getTile(x, y) {
-		let cx = LevelChunk.toChunkSection(x);
-		let cy = LevelChunk.toChunkSection(y);
-		let tx = LevelChunk.toChunkCoord(x);
-		let ty = LevelChunk.toChunkCoord(y);
-		return this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy).getTile(tx, ty) : QBTiles.AIR;
-	}
+	getAllLayers() { return this.#layers; }
+	getLayer(depth) { return this.#layers.get(depth); }
 	
-	setTile(x, y, tile) {
-		let cx = LevelChunk.toChunkSection(x);
-		let cy = LevelChunk.toChunkSection(y);
-		let tx = LevelChunk.toChunkCoord(x);
-		let ty = LevelChunk.toChunkCoord(y);
-		this.#chunks.get(cx, cy)?.setTile(tx, ty, tile);
-	}
-	
-	render(ctx, dt, scale) {
+	render(ctx, dt, snapScale) {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
 		
-		let minCX = -1;
-		let minCY = -1;
-		let maxCX = 1;
-		let maxCY = 1;
-		if (this.#camera) {
-			this.#camera.lerp(ctx, dt, scale);
-			let bounds = this.#camera.bounds(dt);
-			minCX = bounds.minCX;
-			minCY = bounds.minCY;
-			maxCX = bounds.maxCX;
-			maxCY = bounds.maxCY;
-		}
+		if (this.#layers.size === 0) return;
 		
-		for (let cy = minCY; cy <= maxCY; ++cy) {
-			for (let cx = minCX; cx <= maxCX; ++cx) {
-				ctx.save();
-				ctx.transform(1, 0, 0, 1, cx * LevelChunk.CHUNK_SIZE, cy * LevelChunk.CHUNK_SIZE);
-				let chunk = this.#chunks.has(cx, cy) ? this.#chunks.get(cx, cy) : this.#paddingChunk;
-				chunk.render(ctx, dt);
-				ctx.restore();
-			}
+		if (!this.#layers.has(this.#camera.layer)) {
+			this.#camera.layer = this.#layers.values().next().value.depth;
 		}
+		let mainLayer = this.getLayer(this.#camera.layer);
 		
-		for (const entity of this.#loaded.values()) {
+		let sortLayers = [...this.#layers.values()];
+		sortLayers.sort(compareLayersForRendering);
+		
+		for (const layer of sortLayers) {
+			// Scaling
 			ctx.save();
-			let d = entity.displacement(dt, scale);
-			ctx.translate(d.x, d.y);
-			entity.render(ctx, dt);
+			let visualScale = mainLayer.visualScale;
+			layer.render(ctx, dt, this.#camera, snapScale);
 			ctx.restore();
 		}
 	}
 	
-	renderMinimap(ctx, dt) {
-		ctx.fillStyle = "black";
-		
-		ctx.save();
-		ctx.scale(4, 4);
-		
-		ctx.translate(-this.#dimensions[0] - 2, 0);
-		
-		ctx.fillRect(0, 0, this.#dimensions[0] + 2, this.#dimensions[1] + 2);
-		
-		for (const chunk of this.#chunks.values()) {			
-			ctx.fillStyle = "white";
-			if (this.#camera) {
-				let d = this.#camera.displacement(dt);
-				if (chunk.x === LevelChunk.toChunkSection(Math.floor(d.x)) && chunk.y === LevelChunk.toChunkSection(Math.floor(d.y)))
-					ctx.fillStyle = "red";
-			}
-			
-			let x = chunk.x - this.#bottomLeft[0];
-			let y = chunk.y - this.#bottomLeft[1];
-			
-			ctx.save();
-			ctx.translate(x + 1, this.#dimensions[1] - y);
-			ctx.fillRect(0, 0, 1, 1);
-			ctx.restore();
+	renderMinimap(ctx, dt, camera) {
+		if (this.#layers.size === 0) return;
+		if (!this.#layers.has(this.#camera.layer)) {
+			this.#camera.layer = this.#layers.values().next().value.depth;
 		}
-		
-		ctx.restore();
+		let mainLayer = this.getLayer(this.#camera.layer);
+		if (mainLayer instanceof SimulatedLevelLayer) mainLayer.renderMinimap(ctx, dt, camera);
 	}
 	
 	setCamera(camera) { this.#camera = camera; }
-	
-	getAllChunks() { return this.#chunks; }
 
+}
+
+// Greater depth => back of scene, render first
+function compareLayersForRendering(a, b) {
+	if (a.depth > b.depth) return -1;
+	return a.depth < b.depth ? 1 : 0;
 }

@@ -14,8 +14,8 @@ export class Player extends Creature {
 	#invulnerability = 0;
 	#coyoteTime = 0;
 	
-	constructor(x, y, level, id, type) {
-		super(x, y, level, id, type);
+	constructor(x, y, level, layer, id, type) {
+		super(x, y, level, layer, id, type);
 	}
 	
 	getUpdateSnapshot() {
@@ -53,7 +53,7 @@ export class Player extends Creature {
 		}
 		
 		if (this.#isAttacking) {
-			let collided = this.level.getEntities().filter(e => e instanceof Monster).find(e => this.collide(e));
+			let collided = this.layer.getEntities().filter(e => e instanceof Monster).find(e => this.collideWithEntity(e));
 			if (collided?.hurt(1, this)) {
 				let x = collided.x - this.x;
 				let dy = collided.isOnGround() ? 0.1 : collided.dy;

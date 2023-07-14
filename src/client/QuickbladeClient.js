@@ -11,17 +11,21 @@ if (!window.Worker) {
 
 const TICK_DT = 1 / 33;
 const SCALE = 32;
+const SNAP_SCALE = 16;
 
-import { Level } from "../common/level/Level.js";
+import Level from "../common/level/Level.js";
 import { LevelChunk } from "../common/level/LevelChunk.js";
+import LevelLayer from "../common/level/LevelLayer.js";
+import SimulatedLevelLayer from "../common/level/SimulatedLevelLayer.js";
+
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
-import { LevelGenerator } from "../common/level/generation/LevelGeneration.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
+import logMessage from "../common/Logging.js";
 import BiIntMap from "../common/BiIntMap.js";
 import Vec2 from "../common/Vec2.js";
 
@@ -41,22 +45,28 @@ const camera = new Camera();
 let gameState = RENDER_LOADING_SCREEN;
 let controlledEntity = null;
 
-let expectedChunkCount = -1;
-let loadChunks = new BiIntMap();
+let levelDataQueue = [];
+
+let expectedLayers = null;
+let loadLayers = null;
+let busy = false;
+
 let levelGraph = null;
 let clientLevel = null;
 
 worker.onmessage = evt => {
 	switch (evt.data.type) {
-		case "qb:expected_chunk_count": {
-			expectedChunkCount = evt.data.count;
+		case "qb:expected_level_data": {
+			expectedLayers = new Map(evt.data.layers);
+			loadLayers = new Map();
+			pumpLayerDataQueue();
+			
 			gameState = RENDER_LOADING_SCREEN;
-			console.log(`Loading ${expectedChunkCount} chunks...`)
 			break;
 		}
-		case "qb:load_chunk": {
-			loadChunks.set(evt.data.x, evt.data.y, new LevelChunk(evt.data.x, evt.data.y, QBTiles.AIR, evt.data.tiles));
-			trySettingReady();
+		case "qb:load_level_data_packet": {
+			levelDataQueue.push(evt.data);
+			if (expectedLayers) pumpLayerDataQueue();
 			break;
 		}
 		case "qb:update_client": {
@@ -69,7 +79,7 @@ worker.onmessage = evt => {
 		}
 		case "qb:update_controlled_entity": {
 			controlledEntity = evt.data.id;
-			console.log(`Set controller to entity id ${controlledEntity}.`);
+			logMessage(`Set controller to entity id ${controlledEntity}.`);
 			break;
 		}
 		case "qb:player_dead": {
@@ -78,15 +88,11 @@ worker.onmessage = evt => {
 			gameState = RENDER_DEATH_SCREEN;
 			break;
 		}
-		/* TEMP */
-		case "qb:level_graph": {
-			
-		}
 	}
 };
 
 worker.onerror = err => {
-	console.log(`Caught error from worker thread: ${err.message}`);
+	logMessage(`Caught error from worker thread: ${err.message}`);
 };
 
 let inputFlags = 0;
@@ -101,15 +107,54 @@ let lastTickMs = new Date().getTime();
 
 let stopped = false;
 
+function pumpLayerDataQueue(layer, chunk) {
+	let p = 0;
+	let MAX_ITERS = 100;
+	while (levelDataQueue.length > 0 && p++ < 3) {
+		let data = levelDataQueue.shift();
+		if (!expectedLayers.has(data.layer)) continue;
+		if (!loadLayers.has(data.layer)) {
+			loadLayers.set(data.layer, new BiIntMap());
+		}
+		let map = loadLayers.get(data.layer);
+		if (expectedLayers.get(data.layer).count === map.size) continue;
+		map.set(data.x, data.y, new LevelChunk(data.x, data.y, QBTiles.AIR, data.tiles));
+	}
+	trySettingReady();
+}
+
 function trySettingReady() {
-	if (expectedChunkCount !== loadChunks.size) return;
-	clientLevel = new Level(loadChunks);
+	for (const [id, data] of expectedLayers.entries()) {
+		if (!loadLayers.has(id) || loadLayers.get(id).size < data.count) return false;
+	}
+	
+	let loadLayersFinal = new Map();
+	for (const [id, data] of expectedLayers.entries()) {
+		let chunks = loadLayers.get(id);
+		let motionScale = new Vec2(data.motionScale[0], data.motionScale[1]);
+		let visualScale = data.visualScale;
+		switch (data.type) {
+			case "qb:layer": {
+				loadLayersFinal.set(id, new LevelLayer(chunks, id, motionScale, visualScale));
+				break;
+			}
+			case "qb:simulated_layer": {
+				let defaultTile = QBTiles.getFromIdNum(data.defaultTileId);
+				loadLayersFinal.set(id, new SimulatedLevelLayer(chunks, id, motionScale, defaultTile, visualScale));
+				break;
+			}
+		}
+	}
+	clientLevel = new Level(loadLayersFinal);
 	clientLevel.setCamera(camera);
-	expectedChunkCount = -1;
-	loadChunks = [];
+	
+	expectedLayers = null;
+	loadLayers = null;
+	
 	gameState = RENDER_LEVEL;
-	console.log("Client is ready.")
+	logMessage("Client is ready.")
 	worker.postMessage({ type: "qb:client_ready" });
+	return true;
 }
 
 function mainRender() {
@@ -126,7 +171,7 @@ function mainRender() {
 		ctx.translate(0, -15);
 
 		ctx.save();
-		clientLevel.render(ctx, dt, SCALE);	
+		clientLevel.render(ctx, dt, SNAP_SCALE);	
 		ctx.restore();
 		
 		if (tracked) {
@@ -135,7 +180,7 @@ function mainRender() {
 			ctx.lineWidth = 0.125;
 			
 			ctx.save();
-			let d = tracked.displacement(dt, SCALE);
+			let d = tracked.displacement(dt, SNAP_SCALE);
 			let dmx = mouseX * 16 - 8;
 			let dmy = mouseY * -15 + 8;
 			
@@ -166,7 +211,7 @@ function mainRender() {
 		
 		ctx.save();
 		ctx.translate(canvas.width, 0);
-		clientLevel.renderMinimap(ctx, dt);
+		clientLevel.renderMinimap(ctx, dt, camera);
 		ctx.restore();
 	}
 	
