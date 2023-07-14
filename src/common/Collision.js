@@ -26,11 +26,6 @@ export class AABB {
 		let mainBox = other.conflate(this);
 		let startPoint = this.centerPoint();
 		let diff = startPoint.subtractVec(mainBox.centerPoint());
-		if (thisVel.subtractVec(otherVel).lengthSqr() < 1e-4) {
-			if (!mainBox.hasPoint(startPoint.x, startPoint.y)) return HitResult.miss();
-			let face = Direction.nearest(diff.x, diff.y);
-			return HitResult.hit(startPoint, 0, face);
-		}
 		
 		let relVelX = thisVel.x - otherVel.x;
 		let relVelY = thisVel.y - otherVel.y;
@@ -54,8 +49,10 @@ export class AABB {
 		}
 		
 		if (nearX > farY || nearY > farX) return HitResult.miss();
-		let t = Math.max(nearX, nearY);
-		if (t < 0 || 1 < t) return HitResult.miss();
+		let tNear = Math.max(nearX, nearY);
+		let tFar = Math.min(farX, farY);
+		if (tNear > 1 || tFar <= 0) return HitResult.miss();
+		let t = tNear;
 		let pos = startPoint.addVec(thisVel.scale(t));
 		if (nearX > nearY) {
 			return HitResult.hit(pos, t, diff.x > 0 ? Direction.RIGHT : Direction.LEFT);

@@ -160,6 +160,7 @@ function trySettingReady() {
 function mainRender() {
 	let curMs = Date.now();
 	let dt = (curMs - lastTickMs) * TICK_DT;
+	if (dt > 1) dt = 1;
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
@@ -184,7 +185,7 @@ function mainRender() {
 			let dmx = mouseX * 16 - 8;
 			let dmy = mouseY * -15 + 8;
 			
-			camera.lerp(ctx, dt, SCALE);
+			camera.lerp(ctx, dt, SNAP_SCALE);
 			ctx.translate(d.x, d.y);
 			
 			ctx.beginPath();

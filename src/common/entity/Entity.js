@@ -119,7 +119,7 @@ export class Entity {
 		for (const res of results) {
 			let res1 = aabb.collideBox(new AABB(res.tx, res.ty, 1, 1), this.vel);
 			if (!res1.hit || !res1.face && res1.face !== 0) continue;
-			this.pushOff(res.tx, res.ty, res1.face);
+			this.pushOff(res.tx, res.ty, res1.face, res1.time);
 			onGround ||= res1.face === Direction.UP;
 			revertYVel &&= !Direction.isVertical(res1.face);
 		}
@@ -127,29 +127,8 @@ export class Entity {
 		if (revertYVel) this.setVelocity(new Vec2(this.dx, ody));
 	}
 	
-	pushOff(tx, ty, face) {
-		switch (face) {
-			case Direction.UP: {
-				this.setPos(new Vec2(this.x, ty + 1));
-				this.setVelocity(new Vec2(this.dx, 0));
-				break;
-			}
-			case Direction.DOWN: {
-				this.setPos(new Vec2(this.x, ty - this.#height));
-				this.setVelocity(new Vec2(this.dx, 0));
-				break;
-			}
-			case Direction.LEFT: {
-				this.setPos(new Vec2(tx - this.#width / 2, this.y));
-				this.setVelocity(new Vec2(0, this.dy));
-				break;
-			}
-			case Direction.RIGHT: {
-				this.setPos(new Vec2(tx + this.#width / 2 + 1, this.y));
-				this.setVelocity(new Vec2(0, this.dy));
-				break;
-			}
-		}
+	pushOff(tx, ty, face, time) {
+		this.setVelocity(this.vel.addVec(Direction.normal(face).multiply(Math.abs(this.dx), Math.abs(this.dy)).scale(1 - time)));
 	}
 	
 	getAABB() {

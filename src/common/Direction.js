@@ -1,3 +1,5 @@
+import Vec2 from "./Vec2.js";
+
 export const UP = 0;
 export const LEFT = 1;
 export const DOWN = 2;
@@ -39,4 +41,15 @@ export function isVertical(dir) {
 
 export function isHorizontal(dir) {
 	return !isVertical(dir);
+}
+
+export function normal(dir) {
+	if (dir < 0) dir = dir % 4 + 4;
+	switch (dir) {
+		case UP: return new Vec2(0, 1);
+		case LEFT: return new Vec2(-1, 0);
+		case DOWN: return new Vec2(0, -1);
+		case RIGHT: return new Vec2(1, 0);
+		default: return new Vec2(0, 0);
+	}
 }
