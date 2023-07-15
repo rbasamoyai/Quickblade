@@ -2,8 +2,11 @@ import AbstractLevelLayerGenerator from "./AbstractLevelLayerGenerator.js";
 import SimulatedLevelLayer from "../SimulatedLevelLayer.js";
 
 import * as QBTiles from "../../index/QBTiles.js";
-import { AABB } from "../../Collision.js";
 
+import WorleyNoiseTransform from "./tile_transforms/WorleyNoiseTransform.js";
+import SimplePalettedTileTransform from "./tile_transforms/SimplePalettedTileTransform.js";
+
+import { AABB } from "../../Collision.js";
 import Vec2 from "../../Vec2.js";
 import * as Direction from "../../Direction.js";
 import Triangle from "./Triangle.js";
@@ -16,7 +19,7 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 	#nodes = 0;
 	#levelFeatures = [];
 	
-	constructor(rand, msgLogger, defaultTile = QBTiles.BACK_WALL) {
+	constructor(rand, msgLogger, defaultTile = QBTiles.GEN_ROCK) {
 		super(rand, msgLogger, defaultTile);
 	}
 	
@@ -24,10 +27,10 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		this.#addRoomsToGenerate();		
 		this.msgLogger(`Generating ${this.#levelFeatures.length} rooms for depth ${depth}...`);
 		
-		this.msgLogger(`Connecting rooms...`);
-		let graph = this.#connectRoomsToEachOther();
+		this.msgLogger(`Generating room layout...`);
+		let graph = this.#createRoomLayout();
 		
-		// for (const edge of graph.values()) this.#msgLogger(edge);
+		// Add other features to rooms, such as the start room, the end room, etc. Items and entities as well idk
 		
 		this.msgLogger(`Constructing rooms...`);
 		for (const feature of this.#levelFeatures) {
@@ -37,7 +40,16 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		this.msgLogger(`Connecting rooms...`);
 		this.#connectFeatures(graph);
 		
-		// Generate background.
+		// Pad layer? Will mesh better with noise.
+		
+		this.msgLogger(`Detailing level...`);
+		
+		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK, QBTiles.BACK_WALL_1, QBTiles.BACK_WALL_2));
+		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_BACKGROUND, QBTiles.BACKGROUND, QBTiles.AIR));
+		
+		// Generate each sub-layer's actual appearance based on:
+		// 1. Worley noise (splits the sub-layer into regions with different rulesets)
+		// 2. Wave function collapse
 		
 		// Add entities.
 		
@@ -76,7 +88,7 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		return true;
 	}
 	
-	#connectRoomsToEachOther() {
+	#createRoomLayout() {
 		let baseGraph = this.#generateDelaunayGraph();
 		let graph = new EdgeSet();
 		
@@ -219,7 +231,8 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		}
 		
 		// Pass 1: walls on replaceable tiles, e.g. back walls
-		for (const pt of points.values()) {
+		// not doing, GEN_ROCK will form basis of actual tiles later
+		/*for (const pt of points.values()) {
 			let ox = pt[0];
 			let oy = pt[1];
 			
@@ -233,9 +246,9 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 					if (tile.replaceable) this.setTile(tx1, ty1, QBTiles.BLOCK);
 				}
 			}
-		}
+		}*/
 		
-		// Pass 2: background on walls
+		// Pass 1: GEN_BACKGROUND on existing blocks
 		for (const pt of points.values()) {
 			let ox = pt[0];
 			let oy = pt[1];
@@ -246,7 +259,7 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 					
 					let tx1 = ox + tx;
 					let ty1 = oy + ty;
-					this.setTile(tx1, ty1, QBTiles.BACKGROUND);
+					this.setTile(tx1, ty1, QBTiles.GEN_BACKGROUND);
 				}
 			}
 		}
@@ -325,9 +338,9 @@ class ChamberFeature extends LevelFeature {
 				let ty1 = oy + ty;
 				
 				if (ty == 0 || ty + 1 == this.#height || tx == 0 || tx + 1 == this.#width) {
-					gen.setTile(tx1, ty1, QBTiles.BLOCK);
+					gen.setTile(tx1, ty1, QBTiles.GEN_ROOM);
 				} else {
-					gen.setTile(tx1, ty1, QBTiles.BACKGROUND);
+					gen.setTile(tx1, ty1, QBTiles.GEN_BACKGROUND);
 				}
 			}
 		}

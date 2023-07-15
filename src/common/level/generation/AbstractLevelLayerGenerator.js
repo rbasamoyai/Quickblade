@@ -38,6 +38,20 @@ export default class AbstractLevelLayerGenerator {
 		this.#chunks.get(cx, cy).setTile(tx, ty, tile);
 	}
 	
+	applyTileTransform(tileTransform) {
+		for (const chunk of this.#chunks.values()) {
+			let cx = chunk.x * LevelChunk.CHUNK_SIZE;
+			let cy = chunk.y * LevelChunk.CHUNK_SIZE;
+			for (let ty = 0; ty < LevelChunk.CHUNK_SIZE; ++ty) {
+				for (let tx = 0; tx < LevelChunk.CHUNK_SIZE; ++tx) {
+					let x = cx + tx;
+					let y = cy + ty;
+					tileTransform.apply(this.getTile(x, y), this, this.rand, x, y);
+				}
+			}
+		}
+	}
+	
 	get rand() { return this.#rand; }
 	get msgLogger() { return this.#msgLogger; }
 	get chunks() { return this.#chunks; }
