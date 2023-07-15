@@ -1,4 +1,5 @@
 import * as LevelChunk from "./LevelChunk.js";
+import * as QBTiles from "../index/QBTiles.js";
 
 export default class LevelLayer {
 

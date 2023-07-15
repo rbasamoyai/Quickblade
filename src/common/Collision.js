@@ -25,39 +25,47 @@ export class AABB {
 	collideBox(other, thisVel = Vec2.ZERO, otherVel = Vec2.ZERO) {	
 		let mainBox = other.conflate(this);
 		let startPoint = this.centerPoint();
-		let diff = startPoint.subtractVec(mainBox.centerPoint());
 		
-		let relVelX = thisVel.x - otherVel.x;
-		let relVelY = thisVel.y - otherVel.y;
-		
-		let nearX = (mainBox.bottomLeft.x - startPoint.x) / relVelX;
-		let farX = (mainBox.bottomLeft.x - startPoint.x + mainBox.width) / relVelX;
-		if (Number.isNaN(nearX) || Number.isNaN(farX)) return HitResult.miss();
-		if (farX < nearX) {
-			let tmp = farX;
-			farX = nearX;
-			nearX = tmp;
+		let relVel = thisVel.subtractVec(otherVel);
+		let relVelR = new Vec2(1 / relVel.x, 1 / relVel.y);
+		let transl = mainBox.bottomLeft.subtractVec(startPoint);
+		let near = transl.multiplyVec(relVelR);
+		let far = transl.add(mainBox.width, mainBox.height).multiplyVec(relVelR);
+		if (Number.isNaN(near.x) || Number.isNaN(far.x) || Number.isNaN(near.y) || Number.isNaN(far.y)) return HitResult.miss();
+		if (near.x > far.x) {
+			let tmp = near.x;
+			near = new Vec2(far.x, near.y);
+			far = new Vec2(tmp, far.y);
+		}
+		if (near.y > far.y) {
+			let tmp = near.y;
+			near = new Vec2(near.x, far.y);
+			far = new Vec2(far.x, tmp);
 		}
 		
-		let nearY = (mainBox.bottomLeft.y - startPoint.y) / relVelY;
-		let farY = (mainBox.bottomLeft.y - startPoint.y + mainBox.height) / relVelY;
-		if (Number.isNaN(nearY) || Number.isNaN(farY)) return HitResult.miss();
-		if (farY < nearY) {
-			let tmp = farY;
-			farY = nearY;
-			nearY = tmp;
-		}
+		if (near.x > far.y || near.y > far.x) return HitResult.miss();
+		let tNear = Math.max(near.x, near.y);
+		let tFar = Math.min(far.x, far.y);
+		if (tNear >= 1 || tFar <= 0) return HitResult.miss();
 		
-		if (nearX > farY || nearY > farX) return HitResult.miss();
-		let tNear = Math.max(nearX, nearY);
-		let tFar = Math.min(farX, farY);
-		if (tNear > 1 || tFar <= 0) return HitResult.miss();
-		let t = tNear;
-		let pos = startPoint.addVec(thisVel.scale(t));
-		if (nearX > nearY) {
-			return HitResult.hit(pos, t, diff.x > 0 ? Direction.RIGHT : Direction.LEFT);
+		if (tNear < 0 && Math.abs(tNear) > Math.abs(tFar)) {
+			let pos = startPoint.addVec(thisVel.scale(tFar));
+			if (far.y > far.x) {
+				return HitResult.hit(pos, tFar, relVel.x < 0 ? Direction.LEFT : Direction.RIGHT);
+			} else if (far.y < far.x) {
+				return HitResult.hit(pos, tFar, relVel.y < 0 ? Direction.DOWN : Direction.UP);
+			} else {
+				return HitResult.miss();
+			}
 		} else {
-			return HitResult.hit(pos, t, diff.y > 0 ? Direction.UP : Direction.DOWN);
+			let pos = startPoint.addVec(thisVel.scale(tNear));
+			if (near.x > near.y) {
+				return HitResult.hit(pos, tNear, relVel.x < 0 ? Direction.RIGHT : Direction.LEFT);
+			} else if (near.x < near.y) {
+				return HitResult.hit(pos, tNear, relVel.y < 0 ? Direction.UP : Direction.DOWN);
+			} else {
+				return HitResult.miss();
+			}
 		}
 	}
 	

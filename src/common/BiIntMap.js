@@ -17,7 +17,7 @@ export default class BiIntMap {
 		return {
 			next() {
 				let base = baseIter.next();
-				return { value: decode(base.value), done: base.done };
+				return { value: base.value ? decode(base.value) : null, done: base.done };
 			},
 			[Symbol.iterator]() { return this; }
 		};

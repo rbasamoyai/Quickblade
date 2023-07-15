@@ -16,6 +16,7 @@ export default class LevelGenerator {
 		this.#seed = seed ? seed : Date.now();
 		this.#rand = new QBRandom(seed);
 		this.#msgLogger = msgLogger;
+		this.#msgLogger(`Dungeon seed: ${this.#seed}`);
 	}
 	
 	generateLevel() {

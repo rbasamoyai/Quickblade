@@ -1,10 +1,12 @@
 import AbstractLevelLayerGenerator from "./AbstractLevelLayerGenerator.js";
 import SimulatedLevelLayer from "../SimulatedLevelLayer.js";
 
+import { LevelChunk } from "../LevelChunk.js";
 import * as QBTiles from "../../index/QBTiles.js";
 
 import WorleyNoiseTransform from "./tile_transforms/WorleyNoiseTransform.js";
 import SimplePalettedTileTransform from "./tile_transforms/SimplePalettedTileTransform.js";
+import FloorLayerTransform from "./tile_transforms/FloorLayerTransform.js";
 
 import { AABB } from "../../Collision.js";
 import Vec2 from "../../Vec2.js";
@@ -40,20 +42,38 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		this.msgLogger(`Connecting rooms...`);
 		this.#connectFeatures(graph);
 		
-		// Pad layer? Will mesh better with noise.
+		// Pad layer
+		let mergeChunks = new BiIntSet();
+		for (const chunkPos of this.chunks.keys()) {
+			for (let i = -1; i < 2; ++i) {
+				for (let j = -1; j < 2; ++j) {
+					let x = i + chunkPos[0];
+					let y = j + chunkPos[1];
+					if (!this.chunks.has(x, y)) mergeChunks.add(x, y);
+				}
+			}
+		}
+		for (const pos of mergeChunks.values()) {
+			this.chunks.set(pos[0], pos[1], new LevelChunk(pos[0], pos[1], QBTiles.GEN_ROCK));
+		}
 		
 		this.msgLogger(`Detailing level...`);
 		
-		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK, QBTiles.BACK_WALL_1, QBTiles.BACK_WALL_2));
-		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_BACKGROUND, QBTiles.BACKGROUND, QBTiles.AIR));
-		
 		// Generate each sub-layer's actual appearance based on:
 		// 1. Worley noise (splits the sub-layer into regions with different rulesets)
-		// 2. Wave function collapse
+		// 2. Random noise
+		
+		this.applyTileTransform(new FloorLayerTransform(this, QBTiles.GEN_ROOM, QBTiles.GEN_ROOM_BACKGROUND, QBTiles.ROOM_FLOOR, 3, QBTiles.ROOM_WALL_1, 1));
+		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.GEN_ROOM, QBTiles.ROOM_WALL_1, 1));
+		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.GEN_ROOM_BACKGROUND, QBTiles.ROOM_BACKGROUND_1, 1));
+		
+		this.applyTileTransform(new FloorLayerTransform(this, QBTiles.GEN_ROCK, QBTiles.GEN_ROCK_BACKGROUND, QBTiles.ROCK_FLOOR, 3, QBTiles.ROCK_1, 1));
+		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK, QBTiles.ROCK_1, QBTiles.ROCK_2));
+		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK_BACKGROUND, QBTiles.BACKGROUND, QBTiles.AIR));
 		
 		// Add entities.
 		
-		return new SimulatedLevelLayer(this.chunks, depth, motionScale, this.defaultTile, visualScale);
+		return new SimulatedLevelLayer(this.chunks, depth, motionScale, visualScale);
 	}
 	
 	#addRoomsToGenerate() {
@@ -215,8 +235,8 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 			let feature1 = this.#levelFeatures[edge[0]];
 			let feature2 = this.#levelFeatures[edge[1]];
 			
-			let point1 = new Vec2(Math.round(feature1.x), Math.round(feature1.y));
-			let point2 = new Vec2(Math.round(feature2.x), Math.round(feature2.y));
+			let point1 = feature1.getTunnelingPoint(this.rand, feature2);
+			let point2 = feature2.getTunnelingPoint(this.rand, feature1);
 			
 			// Primitive line algorithm that uses just enough samples, might use Bezier curves later
 			let diff = point2.subtractVec(point1);
@@ -230,36 +250,24 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 			}
 		}
 		
-		// Pass 1: walls on replaceable tiles, e.g. back walls
-		// not doing, GEN_ROCK will form basis of actual tiles later
-		/*for (const pt of points.values()) {
-			let ox = pt[0];
-			let oy = pt[1];
-			
-			for (let ty = -2; ty < 3; ++ty) {
-				for (let tx = -2; tx < 3; ++tx) {
-					if (ty * ty + tx * tx > 8) continue;
-					
-					let tx1 = ox + tx;
-					let ty1 = oy + ty;
-					let tile = this.getTile(tx1, ty1);
-					if (tile.replaceable) this.setTile(tx1, ty1, QBTiles.BLOCK);
-				}
-			}
-		}*/
+		let tunnelWidth = 2;
 		
-		// Pass 1: GEN_BACKGROUND on existing blocks
+		// Tunnel background
 		for (const pt of points.values()) {
 			let ox = pt[0];
 			let oy = pt[1];
 			
-			for (let ty = -1; ty < 2; ++ty) {
-				for (let tx = -1; tx < 2; ++tx) {
+			for (let ty = -tunnelWidth; ty <= tunnelWidth; ++ty) {
+				for (let tx = -tunnelWidth; tx <= tunnelWidth; ++tx) {
 					if (ty * ty + tx * tx > 3) continue;
 					
 					let tx1 = ox + tx;
 					let ty1 = oy + ty;
-					this.setTile(tx1, ty1, QBTiles.GEN_BACKGROUND);
+					let oldTile = this.getTile(tx1, ty1);
+					let newTile = QBTiles.GEN_ROCK_BACKGROUND;
+					// TODO: wave function collapse
+					
+					this.setTile(tx1, ty1, newTile);
 				}
 			}
 		}
@@ -340,16 +348,16 @@ class ChamberFeature extends LevelFeature {
 				if (ty == 0 || ty + 1 == this.#height || tx == 0 || tx + 1 == this.#width) {
 					gen.setTile(tx1, ty1, QBTiles.GEN_ROOM);
 				} else {
-					gen.setTile(tx1, ty1, QBTiles.GEN_BACKGROUND);
+					gen.setTile(tx1, ty1, QBTiles.GEN_ROOM_BACKGROUND);
 				}
 			}
 		}
 	}
 	
 	getTunnelingPoint(rand, otherFeature) {
-		let th = Math.atan(otherFeature.y - this.y, otherFeature.x - this.x);
-		th += rand.nextGaussian(0, 45);
-		return pointOnBox(this.#width, this.#height).add(this.x, this.y);
+		let th = Math.atan2(otherFeature.y - this.y, otherFeature.x - this.x);
+		th += rand.nextGaussian(0, Math.PI / 16);
+		return pointOnBox(this.#width - 2, this.#height - 2, th).add(this.x, this.y);
 	}
 	
 	featureProfile() {

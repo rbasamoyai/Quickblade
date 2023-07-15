@@ -96,7 +96,7 @@ export class Entity {
 		let maxY = Math.floor(broadAABB.bottomLeft.y + broadAABB.height);
 		
 		// First pass: order
-		let results = [];	
+		let results = [];
 		for (let ty = minY; ty <= maxY; ++ty) {
 			for (let tx = minX; tx <= maxX; ++tx) {
 				let tile = this.layer.getTile(tx, ty);
@@ -110,10 +110,6 @@ export class Entity {
 		}
 		results.sort(compareHitResults);
 		
-		let ody = this.dy;
-		let revertYVel = true;
-		this.setVelocity(testVel);
-		
 		// Second pass: push
 		let onGround = false;
 		for (const res of results) {
@@ -121,14 +117,15 @@ export class Entity {
 			if (!res1.hit || !res1.face && res1.face !== 0) continue;
 			this.pushOff(res.tx, res.ty, res1.face, res1.time);
 			onGround ||= res1.face === Direction.UP;
-			revertYVel &&= !Direction.isVertical(res1.face);
 		}
 		this.#isOnGround = onGround;
-		if (revertYVel) this.setVelocity(new Vec2(this.dx, ody));
 	}
 	
 	pushOff(tx, ty, face, time) {
-		this.setVelocity(this.vel.addVec(Direction.normal(face).multiply(Math.abs(this.dx), Math.abs(this.dy)).scale(1 - time)));
+		let cn = Direction.normal(face);
+		let absVel = new Vec2(Math.abs(this.dx), Math.abs(this.dy));
+		let add = cn.multiplyVec(absVel).scale(1 - time);
+		this.setVelocity(this.vel.addVec(add));
 	}
 	
 	getAABB() {

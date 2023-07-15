@@ -7,14 +7,10 @@ import * as QBTiles from "../index/QBTiles.js";
 export default class SimulatedLevelLayer extends LevelLayer {
 
 	#loaded = new Map();
-	#paddingChunk;
 	#snapshots = [];
-	#defaultTile;
 	
-	constructor(chunks, depth, motionScale, defaultTile, visualScale = 1) {
+	constructor(chunks, depth, motionScale, visualScale = 1) {
 		super(chunks, depth, motionScale, visualScale);
-		this.#defaultTile = defaultTile;
-		this.#paddingChunk = new LevelChunk.LevelChunk(0, 0, this.#defaultTile);
 	}
 	
 	tick() {
@@ -156,21 +152,8 @@ export default class SimulatedLevelLayer extends LevelLayer {
 	render(ctx, dt, camera, snapScale) {
 		super.render(ctx, dt, camera, snapScale);
 		
-		let bounds = camera.bounds(dt);
-		let chunks = this.getAllChunks();
-		
 		ctx.save();
 		camera.lerp(ctx, dt, snapScale);
-		for (let cy = bounds.minCY; cy <= bounds.maxCY; ++cy) {
-			for (let cx = bounds.minCX; cx <= bounds.maxCX; ++cx) {
-				if (chunks.has(cx, cy)) continue;
-				ctx.save();
-				ctx.transform(1, 0, 0, 1, cx * LevelChunk.CHUNK_SIZE, cy * LevelChunk.CHUNK_SIZE);
-				this.#paddingChunk.render(ctx, dt);
-				ctx.restore();
-			}
-		}
-		
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
 			let d = entity.displacement(dt, snapScale);
@@ -218,7 +201,6 @@ export default class SimulatedLevelLayer extends LevelLayer {
 	getLayerData() {
 		let obj = super.getLayerData();
 		obj.type = "qb:simulated_layer";
-		obj.defaultTileId = QBTiles.getIdNum(this.#defaultTile);
 		return obj;
 	}
 

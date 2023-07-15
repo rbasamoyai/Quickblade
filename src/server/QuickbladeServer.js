@@ -62,7 +62,7 @@ const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
 let updateControl = null;
 
 let mainLayer = serverLevel.getLayer(0);
-let controlledEntity = QBEntities.PLAYER.create(0, 2, serverLevel, mainLayer);
+let controlledEntity = QBEntities.PLAYER.create(0, 0, serverLevel, mainLayer);
 //controlledEntity.noGravity = true;
 serverLevel.addTicked(controlledEntity, 0);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
