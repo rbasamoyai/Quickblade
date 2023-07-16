@@ -139,8 +139,7 @@ function trySettingReady() {
 				break;
 			}
 			case "qb:simulated_layer": {
-				let defaultTile = QBTiles.getFromIdNum(data.defaultTileId);
-				loadLayersFinal.set(id, new SimulatedLevelLayer(chunks, id, motionScale, defaultTile, visualScale));
+				loadLayersFinal.set(id, new SimulatedLevelLayer(chunks, id, motionScale, visualScale));
 				break;
 			}
 		}

@@ -67,9 +67,12 @@ export default class TraversableLayerGenerator extends AbstractLevelLayerGenerat
 		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.GEN_ROOM, QBTiles.ROOM_WALL_1, 1));
 		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.GEN_ROOM_BACKGROUND, QBTiles.ROOM_BACKGROUND_1, 1));
 		
-		this.applyTileTransform(new FloorLayerTransform(this, QBTiles.GEN_ROCK, QBTiles.GEN_ROCK_BACKGROUND, QBTiles.ROCK_FLOOR, 3, QBTiles.ROCK_1, 1));
+		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.GEN_ROCK, QBTiles.ROCK_3, 1, QBTiles.GEN_ROCK, 20));
+		this.applyTileTransform(new FloorLayerTransform(this, QBTiles.GEN_ROCK, QBTiles.GEN_ROCK_BACKGROUND, QBTiles.ROCK_FLOOR));
 		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK, QBTiles.ROCK_1, QBTiles.ROCK_2));
-		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK_BACKGROUND, QBTiles.BACKGROUND, QBTiles.AIR));
+		this.applyTileTransform(new SimplePalettedTileTransform(this, QBTiles.ROCK_2, QBTiles.ROCK_1, 1, QBTiles.ROCK_2, 5));
+		this.applyTileTransform(new WorleyNoiseTransform(this, this.rand, 3, QBTiles.GEN_ROCK_BACKGROUND,
+			QBTiles.ROCK_BACKGROUND_1, QBTiles.ROCK_BACKGROUND_2, QBTiles.AIR));
 		
 		// Add entities.
 		
