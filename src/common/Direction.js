@@ -53,3 +53,8 @@ export function normal(dir) {
 		default: return new Vec2(0, 0);
 	}
 }
+
+export function offset(pos, dir) {
+	let n = normal(dir);
+	return [pos[0] + n.x, pos[1] + n.y];
+}

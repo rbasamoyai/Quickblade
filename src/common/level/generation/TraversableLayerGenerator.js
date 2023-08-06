@@ -336,8 +336,8 @@ class ChamberFeature extends LevelFeature {
 	
 	constructor(id, rand, x, y) {
 		super("chamber", id, rand, x, y);
-		this.#width = rand.nextInt(12, 32);
-		this.#height = rand.nextInt(8, 16);
+		this.#width = rand.nextInt(32, 60);
+		this.#height = rand.nextInt(10, 20);
 	}
 	
 	generateFeature(rand, gen) {

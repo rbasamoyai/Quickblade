@@ -33,6 +33,8 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
 
+//import LevelGenerator from "../common/level/generation/LevelGenerator.js";
+
 const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
 const RANDOM = new QBRandom(null);

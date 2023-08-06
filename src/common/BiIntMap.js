@@ -9,7 +9,14 @@ export default class BiIntMap {
 	
 	set(v1, v2, e) { this.#encodedMap.set(encode(v1, v2), e); }
 	get(v1, v2) { return this.#encodedMap.get(encode(v1, v2)); }	
-	delete(v1, v2) { this.#encodedMap.delete(encode(v1, v2)); }
+	
+	delete(v1, v2) {
+		let code = encode(v1, v2);
+		let ret = this.#encodedMap.get(code);
+		this.#encodedMap.delete(code);
+		return ret;
+	}
+	
 	has(v1, v2) { return this.#encodedMap.has(encode(v1, v2)); }
 	
 	keys() {

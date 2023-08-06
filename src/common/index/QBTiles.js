@@ -48,6 +48,17 @@ export const ROOM_BACKGROUND_1 = register("qb:room_background_1", Tile, new Tile
 export const ROOM_COLLAPSED_WALL_1 = register("qb:room_collapsed_wall_1", Tile, new TileProperties("block/room_collapsed_wall_1").canCollide(false));
 export const ROOM_COLLAPSED_WALL_2 = register("qb:room_collapsed_wall_2", Tile, new TileProperties("block/room_collapsed_wall_2").canCollide(false));
 
+export const BACKGROUND_0 = register("qb:background_0", Tile, new TileProperties("block/background_0"));
+export const BACKGROUND_1 = register("qb:background_1", Tile, new TileProperties("block/background_1"));
+export const BACKGROUND_2 = register("qb:background_2", Tile, new TileProperties("block/background_2"));
+export const BACKGROUND_3 = register("qb:background_3", Tile, new TileProperties("block/background_3"));
+export const BACKGROUND_4 = register("qb:background_4", Tile, new TileProperties("block/background_4"));
+export const BACKGROUND_5 = register("qb:background_5", Tile, new TileProperties("block/background_5"));
+export const BACKGROUND_6 = register("qb:background_6", Tile, new TileProperties("block/background_6"));
+export const BACKGROUND_7 = register("qb:background_7", Tile, new TileProperties("block/background_7"));
+export const BACKGROUND_8 = register("qb:background_8", Tile, new TileProperties("block/background_8"));
+export const BACKGROUND_9 = register("qb:background_9", Tile, new TileProperties("block/background_9"));
+
 export const GEN_ROCK = register("qb:gen_rock", Tile, noTexture().canCollide(true).replaceable());
 export const GEN_ROCK_BACKGROUND = register("qb:gen_rock_background", Tile, noTexture().canCollide(false).replaceable());
 export const GEN_ROOM = register("qb:gen_room", Tile, noTexture().canCollide(true).replaceable());

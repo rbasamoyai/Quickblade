@@ -32,11 +32,15 @@ onmessage = evt => {
 
 const TICK_TARGET = 30;
 
-const levelSeed = 1;
-const levelGenerator = new LevelGenerator(levelSeed, logMessage);
-const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
+let controlledEntity = null;
+let updateControl = null;
+let stopped = false;
 
-{
+const levelSeed = 1;
+let serverLevel = null;
+const levelGenerator = new LevelGenerator(levelSeed, logMessage);
+levelGenerator.generateLevel(msg => console.log(msg)).then(level => {
+	serverLevel = level;
 	let layers = serverLevel.getAllLayers();
 	
 	let serializedLayers = [];
@@ -57,24 +61,24 @@ const serverLevel = levelGenerator.generateLevel(msg => console.log(msg));
 			});
 		}
 	}
+	initController();
+});
+
+function initController() {
+	if (!serverLevel) return;
+	let mainLayer = serverLevel.getLayer(0);
+	controlledEntity = QBEntities.PLAYER.create(0, 0, serverLevel, mainLayer);
+	//controlledEntity.noGravity = true;
+	serverLevel.addTicked(controlledEntity, 0);
+	serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
+
+	input.setEntity(controlledEntity);
+	updateControl = controlledEntity.id;
+
+	let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+	serverLevel.addTicked(otherEntity, 0);
+	serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 }
-
-let updateControl = null;
-
-let mainLayer = serverLevel.getLayer(0);
-let controlledEntity = QBEntities.PLAYER.create(0, 0, serverLevel, mainLayer);
-//controlledEntity.noGravity = true;
-serverLevel.addTicked(controlledEntity, 0);
-serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
-
-input.setEntity(controlledEntity);
-updateControl = controlledEntity.id;
-
-let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
-serverLevel.addTicked(otherEntity, 0);
-serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
-
-let stopped = false;
 
 function mainloop() {
 	let startMs = Date.now();

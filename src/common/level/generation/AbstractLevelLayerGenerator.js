@@ -18,7 +18,7 @@ export default class AbstractLevelLayerGenerator {
 		this.#defaultTile = defaultTile;
 	}
 	
-	generateLayer(depth, motionScale, visualScale = 1) {
+	generateLayer(depth, motionScale, visualScale) {
 	}
 	
 	getTile(x, y) {
@@ -36,6 +36,14 @@ export default class AbstractLevelLayerGenerator {
 		let ty = LevelChunk.toChunkCoord(y);
 		if (!this.#chunks.has(cx, cy)) this.#chunks.set(cx, cy, new LevelChunk.LevelChunk(cx, cy, this.#defaultTile));
 		this.#chunks.get(cx, cy).setTile(tx, ty, tile);
+	}
+	
+	allocChunk(cx, cy) {
+		if (!this.#chunks.has(cx, cy)) this.#chunks.set(cx, cy, new LevelChunk.LevelChunk(cx, cy, this.#defaultTile));
+	}
+	
+	hasPos(x, y) {
+		return this.#chunks.has(LevelChunk.toChunkSection(x), LevelChunk.toChunkSection(y));
 	}
 	
 	applyTileTransform(tileTransform) {
