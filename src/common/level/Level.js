@@ -90,6 +90,7 @@ export default class Level {
 			this.#camera.layer = this.#layers.values().next().value.depth;
 		}
 		let mainLayer = this.getLayer(this.#camera.layer);
+		let motionScale = mainLayer.motionScale;
 		
 		let sortLayers = [...this.#layers.values()];
 		sortLayers.sort(compareLayersForRendering);
@@ -97,8 +98,9 @@ export default class Level {
 		for (const layer of sortLayers) {
 			// Scaling
 			ctx.save();
-			let visualScale = mainLayer.visualScale;
-			layer.render(ctx, dt, this.#camera, snapScale);
+			let motionScale1 = layer.motionScale;
+			let motionScale2 = new Vec2(motionScale1.x / motionScale.x, motionScale1.y / motionScale.y);
+			layer.render(ctx, dt, this.#camera, snapScale, motionScale2);
 			ctx.restore();
 		}
 	}

@@ -6,6 +6,8 @@ export default class Camera {
 	#pos = Vec2.ZERO;
 	#oldPos = Vec2.ZERO;
 	layer;
+	
+	static #NORMAL_MOTION = new Vec2(1, 1);
 
 	constructor(initialLayer = 0) {
 		this.layer = initialLayer;
@@ -16,19 +18,19 @@ export default class Camera {
 		this.#oldPos = oldPos;
 	}
 	
-	displacement(dt, snapScale) {
-		let d = this.#oldPos.addVec(this.#pos.subtractVec(this.#oldPos).scale(dt));
+	displacement(dt, snapScale, motionScale = Camera.#NORMAL_MOTION) {
+		let d = this.#oldPos.addVec(this.#pos.subtractVec(this.#oldPos).scale(dt)).multiplyVec(motionScale);
 		if (!snapScale) return d;
 		return new Vec2(Math.floor(d.x * snapScale), Math.floor(d.y * snapScale)).scale(1 / snapScale);
 	}
 	
-	lerp(ctx, dt, snapScale) {
-		let d = this.displacement(dt, snapScale);
+	lerp(ctx, dt, snapScale, motionScale = Camera.#NORMAL_MOTION) {
+		let d = this.displacement(dt, snapScale, motionScale);
 		ctx.translate(8 - d.x, 7 - d.y);
 	}
 	
-	bounds(dt) {
-		let d = this.displacement(dt);
+	bounds(dt, motionScale = Camera.#NORMAL_MOTION) {
+		let d = this.displacement(dt, null, motionScale);
 		return {
 			minCX: toChunkSection(Math.floor(d.x - 8)),
 			minCY: toChunkSection(Math.floor(d.y - 7)),

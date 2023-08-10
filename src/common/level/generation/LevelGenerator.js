@@ -1,8 +1,9 @@
 import Level from "../Level.js";
 
 import TraversableLayerGenerator from "./TraversableLayerGenerator.js";
-import WaveFunctionCollapseLayerGenerator from "./WaveFunctionCollapseLayerGenerator.js";
+import SimpleBackgroundLayerGenerator from "./SimpleBackgroundLayerGenerator.js";
 
+import * as QBTiles from "../../index/QBTiles.js";
 import QBRandom from "../../QBRandom.js";
 import Vec2 from "../../Vec2.js";
 
@@ -22,8 +23,8 @@ export default class LevelGenerator {
 	
 	async generateLevel() {
 		this.#msgLogger("Loading generation assets...");
-		let bgCfgFile = await this.loadFile("generation/dungeon_background_1.json");
-		let backgroundGenConfig = await bgCfgFile.json();
+		//let bgCfgFile = await this.loadFile("generation/dungeon_background_1.json");
+		//let backgroundGenConfig = await bgCfgFile.json();
 		
 		// Make main layer as well as other layers.
 		// Pick from a theme pool.
@@ -34,7 +35,7 @@ export default class LevelGenerator {
 		let bottomLeft = mainLayer.bottomLeft;
 		let dimensions = mainLayer.dimensions;
 		
-		let backgroundGen1 = new WaveFunctionCollapseLayerGenerator(this.#rand, this.#msgLogger, bottomLeft, dimensions, backgroundGenConfig);
+		let backgroundGen1 = new SimpleBackgroundLayerGenerator(this.#rand, this.#msgLogger, bottomLeft, dimensions, QBTiles.BACKGROUND_0, 6, QBTiles.BACKGROUND_1, 1);
 		this.#layers.set(1, backgroundGen1.generateLayer(0, new Vec2(0.5, 1)));
 		
 		this.#msgLogger("Done generating dungeon.");

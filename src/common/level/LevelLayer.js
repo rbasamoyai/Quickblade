@@ -62,11 +62,11 @@ export default class LevelLayer {
 	
 	tick() {}
 	
-	render(ctx, dt, camera, snapScale) {
-		let bounds = camera.bounds(dt);
+	render(ctx, dt, camera, snapScale, motionScale) {
+		let bounds = camera.bounds(dt, motionScale);
 		
 		ctx.save();
-		camera.lerp(ctx, dt, snapScale);
+		camera.lerp(ctx, dt, snapScale, motionScale);
 		for (let cy = bounds.minCY; cy <= bounds.maxCY; ++cy) {
 			for (let cx = bounds.minCX; cx <= bounds.maxCX; ++cx) {
 				if (!this.#chunks.has(cx, cy)) continue;
