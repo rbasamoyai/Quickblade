@@ -18,6 +18,7 @@ import { LevelChunk } from "../common/level/LevelChunk.js";
 import LevelLayer from "../common/level/LevelLayer.js";
 import SimulatedLevelLayer from "../common/level/SimulatedLevelLayer.js";
 
+import * as TextRenderer from "./TextRenderer.js";
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
@@ -42,6 +43,8 @@ const RANDOM = new QBRandom(null);
 const RENDER_LEVEL = 0;
 const RENDER_DEATH_SCREEN = 1;
 const RENDER_LOADING_SCREEN = 2;
+
+const textRenderer = new TextRenderer.TextRenderer("ui/font");
 
 const camera = new Camera();
 let gameState = RENDER_LOADING_SCREEN;
@@ -217,49 +220,50 @@ function mainRender() {
 		ctx.restore();
 	}
 	
-	let debugFillStyle = "black";
-	let debugFont = "12px Times New Roman";
-	
 	if (gameState == RENDER_LEVEL && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		if (entity instanceof Creature) {
-			ctx.font = "20px Times New Roman";
-			ctx.textAlign = "left";
-			ctx.fillText(`HP: ${entity.hp} / ${entity.maxHp}`, 0, 450);
+			ctx.save();
+			ctx.translate(0, 400);
+			ctx.scale(2, 2);
+			textRenderer.render(ctx, `HP:${entity.hp}/${entity.maxHp}`);
+			ctx.restore();
 		}
 	}
 	if (gameState == RENDER_DEATH_SCREEN) {
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		
-		ctx.fillStyle = "crimson";
-		ctx.font = "40px Times New Roman";
-		ctx.textAlign = "center";
-		ctx.fillText("YOU DIED", canvas.width / 2, 240);
-		
-		debugFillStyle = "white";
+		ctx.save();
+		ctx.translate(canvas.width / 2, 208);
+		ctx.scale(4, 4);
+		textRenderer.render(ctx, "YOU DIED", TextRenderer.CENTER_ALIGN, "crimson");
+		ctx.restore();
 	} else if (gameState == RENDER_LOADING_SCREEN) {
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		
-		ctx.fillStyle = "white";
-		ctx.font = "40px Times New Roman";
-		ctx.textAlign = "center";
-		ctx.fillText("Loading...", canvas.width / 2, 240);
-		
-		debugFillStyle = "white";
+		ctx.save();
+		ctx.translate(canvas.width / 2, 208);
+		ctx.scale(4, 4);
+		textRenderer.render(ctx, "Loading...", TextRenderer.CENTER_ALIGN);
+		ctx.restore();
 	}
 	
-	ctx.fillStyle = debugFillStyle;
-	ctx.globalAlpha = 1;
-	ctx.font = debugFont;
-	ctx.textAlign = "left";
-	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
+	ctx.save();
+	ctx.scale(2, 2);
+	textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`);
+	ctx.restore();
+	
 	if (clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		let x = entity.x.toFixed(3);
 		let y = entity.y.toFixed(3);
-		ctx.fillText(`Position: X=${x} Y=${y}`, 0, 60);
+		ctx.save();
+		ctx.translate(0, 16);
+		ctx.scale(2, 2);
+		textRenderer.render(ctx, `Pos:(${x},${y})`);
+		ctx.restore();
 	}
 	
 	ctx.restore();
