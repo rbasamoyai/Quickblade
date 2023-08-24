@@ -25,6 +25,7 @@ import { Creature } from "../common/entity/Creature.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
+import * as EntityTextures from "../common/entity/textures/EntityTextures.js";
 
 import logMessage from "../common/Logging.js";
 import BiIntMap from "../common/BiIntMap.js";

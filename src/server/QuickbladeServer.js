@@ -75,9 +75,9 @@ function initController() {
 	input.setEntity(controlledEntity);
 	updateControl = controlledEntity.id;
 
-	let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+	/* let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
 	serverLevel.addTicked(otherEntity, 0);
-	serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+	serverLevel.snapshots.push(otherEntity.getLoadSnapshot()); */
 }
 
 function mainloop() {

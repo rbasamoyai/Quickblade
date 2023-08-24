@@ -1,6 +1,7 @@
 import { Creature } from "./Creature.js";
 import { Monster } from "./Monster.js";
 import { AABB } from "../Collision.js";
+import * as EntityTextures from "./textures/EntityTextures.js";
 
 import Vec2 from "../Vec2.js";
 
@@ -13,6 +14,7 @@ export class Player extends Creature {
 	#isAttacking = false;
 	#invulnerability = 0;
 	#coyoteTime = 0;
+	#runTime = 0;
 	
 	constructor(x, y, level, layer, id, type) {
 		super(x, y, level, layer, id, type);
@@ -22,6 +24,7 @@ export class Player extends Creature {
 		let result = super.getUpdateSnapshot();
 		result.isAttacking = this.#isAttacking;
 		result.invulnerability = this.#invulnerability;
+		result.runTime = this.#runTime;
 		return result;
 	}
 	
@@ -29,6 +32,7 @@ export class Player extends Creature {
 		super.readUpdateSnapshot(data);
 		this.#isAttacking = data.isAttacking;
 		this.#invulnerability = data.invulnerability;
+		this.#runTime = data.runTime;
 	}
 	
 	isInvulnerable() { return super.isInvulnerable() || this.#invulnerability > 0; }
@@ -67,6 +71,15 @@ export class Player extends Creature {
 				}
 			}
 		}
+		
+		if (this.isOnGround() && Math.abs(this.dx) > 0.01) {
+			++this.#runTime;
+			if (this.#runTime > 6) {
+				this.#runTime = 1;
+			}
+		} else {
+			this.#runTime = 0;
+		}
 	}
 	
 	canJump() {
@@ -90,6 +103,40 @@ export class Player extends Creature {
 	
 	getFillStyle() {
 		return this.#invulnerability ? "#ffffff" : super.getFillStyle();
+	}
+	
+	render(ctx, dt) {
+		// TODO: customization, armor
+		let skinColor = 1;
+		let eyeColor = 0;
+		
+		let playerTextures = EntityTextures.PLAYER_BODY[skinColor];
+		let eyes = EntityTextures.PLAYER_EYES[eyeColor];
+		let top = EntityTextures.TUNIC;
+		let shoes = EntityTextures.SANDALS;
+		
+		let ax = 0;
+		let ay = 0;
+		if (this.isOnGround() && this.#runTime > 0) {
+			ax = 32 * Math.min(this.#runTime, 6);
+		} else if (!this.isOnGround()) {
+			ax = 224;
+		}
+		
+		ctx.save();
+		ctx.translate(-1, 2);
+		ctx.transform(1, 0, 0, -1, 0, 0);
+		if (!this.facingRight) ctx.transform(-1, 0, 0, 1, 2, 0);
+		ctx.imageSmoothingEnabled = false;
+		
+		ctx.drawImage(playerTextures.underBody.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		ctx.drawImage(top.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		ctx.drawImage(shoes.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		ctx.drawImage(playerTextures.arms.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		ctx.drawImage(playerTextures.head.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		ctx.drawImage(eyes.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
+		
+		ctx.restore();
 	}
 	
 }

@@ -60,7 +60,8 @@ export class Entity {
 			oldPos: this.oldPos.toArray(),
 			vel: this.vel.toArray(),
 			facingRight: this.facingRight,
-			layer: this.layer.depth
+			layer: this.layer.depth,
+			onGround: this.isOnGround()
 		};
 	}
 	
@@ -69,6 +70,7 @@ export class Entity {
 		this.setOldPos(new Vec2(...data.oldPos));
 		this.setVelocity(new Vec2(...data.vel));
 		this.facingRight = data.facingRight;
+		this.#isOnGround = data.onGround;
 	}
 	
 	tick() {
@@ -113,10 +115,11 @@ export class Entity {
 		// Second pass: push
 		let onGround = false;
 		for (const res of results) {
+			onGround ||= res.face === Direction.UP;
 			let res1 = aabb.collideBox(new AABB(res.tx, res.ty, 1, 1), this.vel);
 			if (!res1.hit || !res1.face && res1.face !== 0) continue;
 			this.pushOff(res.tx, res.ty, res1.face, res1.time);
-			onGround ||= res1.face === Direction.UP;
+			onGround &&= res1.face === Direction.UP;
 		}
 		this.#isOnGround = onGround;
 	}
