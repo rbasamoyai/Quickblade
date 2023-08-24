@@ -1,5 +1,4 @@
 import Vec2 from "../common/Vec2.js";
-import { toChunkSection } from "../common/level/LevelChunk.js";
 
 export default class Camera {
 
@@ -32,10 +31,10 @@ export default class Camera {
 	bounds(dt, motionScale = Camera.#NORMAL_MOTION) {
 		let d = this.displacement(dt, null, motionScale);
 		return {
-			minCX: toChunkSection(Math.floor(d.x - 8)),
-			minCY: toChunkSection(Math.floor(d.y - 7)),
-			maxCX: toChunkSection(Math.floor(d.x + 8)),
-			maxCY: toChunkSection(Math.floor(d.y + 8))
+			minX: Math.floor(d.x - 8),
+			minY: Math.floor(d.y - 7),
+			maxX: Math.floor(d.x + 8),
+			maxY: Math.floor(d.y + 8)
 		};
 	}
 	

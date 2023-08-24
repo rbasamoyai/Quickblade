@@ -67,14 +67,16 @@ export default class LevelLayer {
 		
 		ctx.save();
 		camera.lerp(ctx, dt, snapScale, motionScale);
-		for (let cy = bounds.minCY; cy <= bounds.maxCY; ++cy) {
-			for (let cx = bounds.minCX; cx <= bounds.maxCX; ++cx) {
-				if (!this.#chunks.has(cx, cy)) continue;
-				ctx.save();
-				ctx.transform(1, 0, 0, 1, cx * LevelChunk.CHUNK_SIZE, cy * LevelChunk.CHUNK_SIZE);
-				this.#chunks.get(cx, cy).render(ctx, dt);
-				ctx.restore();
+		ctx.translate(bounds.minX, bounds.minY);
+		for (let ty = bounds.minY; ty <= bounds.maxY; ++ty) {
+			ctx.save();
+			for (let tx = bounds.minX; tx <= bounds.maxX; ++tx) {
+				let tile = this.getTile(tx, ty);
+				tile.render(ctx);
+				ctx.translate(1, 0);
 			}
+			ctx.restore();
+			ctx.translate(0, 1);
 		}
 		ctx.restore();
 	}
