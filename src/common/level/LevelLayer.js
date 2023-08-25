@@ -72,7 +72,10 @@ export default class LevelLayer {
 			ctx.save();
 			for (let tx = bounds.minX; tx <= bounds.maxX; ++tx) {
 				let tile = this.getTile(tx, ty);
+				ctx.save();
+				ctx.transform(1, 0, 0, -1, 0, 1);
 				tile.render(ctx);
+				ctx.restore();
 				ctx.translate(1, 0);
 			}
 			ctx.restore();
