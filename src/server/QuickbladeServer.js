@@ -19,6 +19,12 @@ onmessage = evt => {
 			onLevelGenerate(evt.data.seed);
 			break;
 		}
+		case "qb:pause": {
+			if (serverLevel) {
+				serverLevel.setPaused(evt.data.pause);
+			}
+			break;
+		}
 		case "qb:kb_input_update": {
 			input.updateInput(evt.data.state | 0);
 			break;
@@ -44,6 +50,7 @@ let stopped = false;
 async function onLevelGenerate(seed) {
 	let levelGenerator = new LevelGenerator(seed, logMessage);
 	serverLevel = await levelGenerator.generateLevel(console.log);
+	serverLevel.setPaused(true);
 	let layers = serverLevel.getAllLayers();
 	
 	let serializedLayers = [];
@@ -78,19 +85,16 @@ function initController() {
 	input.setEntity(controlledEntity);
 	updateControl = controlledEntity.id;
 
-	/* let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+	let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
 	serverLevel.addTicked(otherEntity, 0);
-	serverLevel.snapshots.push(otherEntity.getLoadSnapshot()); */
+	serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 }
 
 function mainloop() {
 	let startMs = Date.now();
-	input.tick();
-	if (serverLevel && clientReady) {
-		serverLevel.tick();	
-	}
-	while (Date.now() - startMs < TICK_TARGET) {}
-	if (serverLevel && clientReady) {
+	if (serverLevel && clientReady && !serverLevel.isPaused()) {
+		input.tick();
+		serverLevel.tick();
 		postMessage({
 			type: "qb:update_client",
 			time: Date.now(),
@@ -110,6 +114,7 @@ function mainloop() {
 			});
 		}
 	}
+	while (Date.now() - startMs < TICK_TARGET) {}
 	setTimeout(mainloop, 0);
 }
 

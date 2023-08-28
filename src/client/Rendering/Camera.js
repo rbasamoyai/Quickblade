@@ -1,4 +1,4 @@
-import Vec2 from "../common/Vec2.js";
+import Vec2 from "../../common/Vec2.js";
 
 export default class Camera {
 

@@ -18,8 +18,8 @@ import { LevelChunk } from "../common/level/LevelChunk.js";
 import LevelLayer from "../common/level/LevelLayer.js";
 import SimulatedLevelLayer from "../common/level/SimulatedLevelLayer.js";
 
-import * as TextRenderer from "./TextRenderer.js";
-import Camera from "./Camera.js";
+import * as TextRenderer from "./rendering/TextRenderer.js";
+import Camera from "./rendering/Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
 
@@ -31,12 +31,15 @@ import logMessage from "../common/Logging.js";
 import BiIntMap from "../common/BiIntMap.js";
 import Vec2 from "../common/Vec2.js";
 
+import TitleScreen from "./rendering/screens/TitleScreen.js";
+import LoadingScreen from "./rendering/screens/LoadingScreen.js";
+import DeathScreen from "./rendering/screens/DeathScreen.js";
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
 
 //import LevelGenerator from "../common/level/generation/LevelGenerator.js";
-//import "../server/QuickbladeServer.js";
 
 const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
@@ -45,6 +48,10 @@ const RANDOM = new QBRandom(null);
 const RENDER_LEVEL = 0;
 const RENDER_DEATH_SCREEN = 1;
 const RENDER_LOADING_SCREEN = 2;
+const RENDER_TITLE_SCREEN = 3;
+const RENDER_CUSTOMIZATION_SCREEN = 4;
+
+let RENDER_DEBUG_INFO = false;
 
 const textRenderer = new TextRenderer.TextRenderer("ui/font");
 
@@ -58,8 +65,8 @@ let expectedLayers = null;
 let loadLayers = null;
 let busy = false;
 
-let levelGraph = null;
 let clientLevel = null;
+let currentScreen = null;
 
 worker.onmessage = evt => {
 	switch (evt.data.type) {
@@ -92,7 +99,7 @@ worker.onmessage = evt => {
 		case "qb:player_dead": {
 			controlledEntity = null;
 			clientLevel = null;
-			gameState = RENDER_DEATH_SCREEN;
+			setScreen(new DeathScreen(textRenderer));
 			break;
 		}
 	}
@@ -114,7 +121,18 @@ let lastTickMs = new Date().getTime();
 
 let stopped = false;
 
-worker.postMessage({ type: "qb:generate_new_level", seed: 1 })
+requestNewLevel(1);
+
+function requestNewLevel(seed) {
+	clientLevel = null;
+	setScreen(new LoadingScreen(textRenderer));
+	worker.postMessage({ type: "qb:generate_new_level", seed: seed });
+}
+
+function setScreen(screen) {
+	currentScreen = screen;
+	worker.postMessage({ type: "qb:pause", pause: screen && screen.pausesLevel(clientLevel) })
+}
 
 function pumpLayerDataQueue(layer, chunk) {
 	let p = 0;
@@ -162,6 +180,7 @@ function trySettingReady() {
 	gameState = RENDER_LEVEL;
 	logMessage("Client is ready.")
 	worker.postMessage({ type: "qb:client_ready" });
+	setScreen(null);
 	return true;
 }
 
@@ -234,40 +253,27 @@ function mainRender() {
 			ctx.restore();
 		}
 	}
-	if (gameState == RENDER_DEATH_SCREEN) {
-		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		
-		ctx.save();
-		ctx.translate(canvas.width / 2, 208);
-		ctx.scale(4, 4);
-		textRenderer.render(ctx, "YOU DIED", TextRenderer.CENTER_ALIGN, "crimson");
-		ctx.restore();
-	} else if (gameState == RENDER_LOADING_SCREEN) {
-		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		
-		ctx.save();
-		ctx.translate(canvas.width / 2, 208);
-		ctx.scale(4, 4);
-		textRenderer.render(ctx, "Loading...", TextRenderer.CENTER_ALIGN);
-		ctx.restore();
-	}
 	
 	ctx.save();
-	ctx.scale(2, 2);
-	textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`);
+	currentScreen?.render(canvas, ctx, dt);
 	ctx.restore();
 	
-	if (clientLevel && isControlling()) {
-		let entity = clientLevel.getEntityById(controlledEntity);
-		let x = entity.x.toFixed(3);
-		let y = entity.y.toFixed(3);
+	if (RENDER_DEBUG_INFO) {
 		ctx.save();
-		ctx.translate(0, 16);
 		ctx.scale(2, 2);
-		textRenderer.render(ctx, `Pos:(${x},${y})`);
+		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`);
 		ctx.restore();
+	
+		if (clientLevel && isControlling()) {
+			let entity = clientLevel.getEntityById(controlledEntity);
+			let x = entity.x.toFixed(3);
+			let y = entity.y.toFixed(3);
+			ctx.save();
+			ctx.translate(0, 16);
+			ctx.scale(2, 2);
+			textRenderer.render(ctx, `Pos:(${x},${y})`);
+			ctx.restore();
+		}
 	}
 	
 	ctx.restore();

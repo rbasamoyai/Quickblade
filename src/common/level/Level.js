@@ -13,6 +13,8 @@ export default class Level {
 
 	#layers;
 	
+	#paused;
+	
 	#camera;
 	#bottomLeft;
 	#dimensions;
@@ -115,6 +117,9 @@ export default class Level {
 	}
 	
 	setCamera(camera) { this.#camera = camera; }
+
+	setPaused(paused) { this.#paused = paused; }
+	isPaused() { return this.#paused; }
 
 }
 
