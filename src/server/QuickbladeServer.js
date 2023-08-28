@@ -11,9 +11,14 @@ import Vec2 from "../common/Vec2.js";
 const input = new ServerInputHandler();
 
 let clientReady = false;
+let serverLevel = null;
 
 onmessage = evt => {
 	switch (evt.data.type) {
+		case "qb:generate_new_level": {
+			onLevelGenerate(evt.data.seed);
+			break;
+		}
 		case "qb:kb_input_update": {
 			input.updateInput(evt.data.state | 0);
 			break;
@@ -36,11 +41,9 @@ let controlledEntity = null;
 let updateControl = null;
 let stopped = false;
 
-const levelSeed = 1;
-let serverLevel = null;
-const levelGenerator = new LevelGenerator(levelSeed, logMessage);
-levelGenerator.generateLevel(msg => console.log(msg)).then(level => {
-	serverLevel = level;
+async function onLevelGenerate(seed) {
+	let levelGenerator = new LevelGenerator(seed, logMessage);
+	serverLevel = await levelGenerator.generateLevel(console.log);
 	let layers = serverLevel.getAllLayers();
 	
 	let serializedLayers = [];
@@ -62,7 +65,7 @@ levelGenerator.generateLevel(msg => console.log(msg)).then(level => {
 		}
 	}
 	initController();
-});
+}
 
 function initController() {
 	if (!serverLevel) return;

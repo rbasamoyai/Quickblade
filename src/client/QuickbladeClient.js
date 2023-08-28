@@ -36,6 +36,7 @@ const ctx = canvas.getContext("2d");
 ctx.imageSmoothEnabled = false;
 
 //import LevelGenerator from "../common/level/generation/LevelGenerator.js";
+//import "../server/QuickbladeServer.js";
 
 const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
@@ -112,6 +113,8 @@ let lastFrameMs = new Date().getTime();
 let lastTickMs = new Date().getTime();
 
 let stopped = false;
+
+worker.postMessage({ type: "qb:generate_new_level", seed: 1 })
 
 function pumpLayerDataQueue(layer, chunk) {
 	let p = 0;
