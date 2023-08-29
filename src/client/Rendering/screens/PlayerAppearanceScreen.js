@@ -28,7 +28,7 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		this.addWidget(new Widget(this, 24, 112, 16, 8, b => this.#cycleEyes(-1), WidgetTextures.SELECTOR_LEFT, WidgetTextures.SELECTOR_LEFT_HOVERED));
 		this.addWidget(new Widget(this, 88, 112, 16, 8, b => this.#cycleEyes(1), WidgetTextures.SELECTOR_RIGHT, WidgetTextures.SELECTOR_RIGHT_HOVERED));
 		
-		this.addWidget(new Button(this, 140, 188, 10, 3, "Confirm", this.textRenderer, b => confirmCallback(this.#createPlayerAppearance())));
+		this.addWidget(new Button(this, 140, 184, 10, 3, "Confirm", this.textRenderer, b => confirmCallback(this.#createPlayerAppearance())));
 	}
 	
 	renderBg(canvas, ctx, dt) {

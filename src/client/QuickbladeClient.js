@@ -10,8 +10,12 @@ if (!window.Worker) {
 }
 
 const TICK_DT = 1 / 33;
-const SCALE = 32;
+const UPSCALE = 3;
+const WORLD_SCREEN_SCALE = 16;
 const SNAP_SCALE = 16;
+const SCREEN_WIDTH = 256;
+const SCREEN_HEIGHT = 224;
+let RENDER_DEBUG_INFO = true;
 
 import Level from "../common/level/Level.js";
 import { LevelChunk } from "../common/level/LevelChunk.js";
@@ -52,8 +56,6 @@ const RANDOM = new QBRandom(null);
 
 const RENDER_LEVEL = 0;
 const RENDER_ONLY_SCREEN = 1;
-
-let RENDER_DEBUG_INFO = false;
 
 const textRenderer = new TextRenderer.TextRenderer("ui/font");
 
@@ -205,10 +207,11 @@ function mainRender() {
 	}
 	
 	ctx.save();
+	ctx.scale(UPSCALE, UPSCALE);
 	
 	if (renderLevel && clientLevel) {
 		ctx.save();
-		ctx.scale(SCALE, -SCALE);
+		ctx.scale(WORLD_SCREEN_SCALE, -WORLD_SCREEN_SCALE);
 		ctx.translate(0, -15);
 
 		ctx.save();
@@ -251,15 +254,10 @@ function mainRender() {
 		ctx.restore();
 		
 		ctx.save();
-		ctx.translate(canvas.width, 0);
+		ctx.translate(SCREEN_WIDTH, 0);
 		clientLevel.renderMinimap(ctx, dt, camera);
 		ctx.restore();
 	}
-	
-	ctx.restore();
-	
-	ctx.save();
-	ctx.scale(2, 2);
 	
 	if (currentScreen) {
 		ctx.save();
@@ -273,15 +271,14 @@ function mainRender() {
 	}
 	
 	if (RENDER_DEBUG_INFO) {
-		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 240);
+		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 208);
 		if (clientLevel && isControlling()) {
 			let entity = clientLevel.getEntityById(controlledEntity);
 			let x = entity.x.toFixed(3);
 			let y = entity.y.toFixed(3);
-			textRenderer.render(ctx, `Pos:(${x},${y})`, 0, 248);
+			textRenderer.render(ctx, `Pos:(${x},${y})`, 0, 216);
 		}
 	}
-	
 	ctx.restore();
 	
 	lastFrameMs = curMs;
@@ -335,7 +332,7 @@ canvas.onmousemove = evt => {
 	let oy = mouseY;
 	mouseX = evt.offsetX / canvas.width;
 	mouseY = evt.offsetY / canvas.height;
-	currentScreen?.onMouseMove(mouseX * 256, mouseY * 240, ox * 256, oy * 240);
+	currentScreen?.onMouseMove(mouseX * SCREEN_WIDTH, mouseY * SCREEN_HEIGHT, ox * SCREEN_WIDTH, oy * SCREEN_HEIGHT);
 };
 
 canvas.oncontextmenu = evt => {

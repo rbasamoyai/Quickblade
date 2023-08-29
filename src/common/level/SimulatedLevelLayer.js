@@ -168,7 +168,7 @@ export default class SimulatedLevelLayer extends LevelLayer {
 		ctx.fillStyle = "black";
 		
 		ctx.save();
-		ctx.scale(4, 4);
+		ctx.scale(2, 2);
 		
 		ctx.translate(-this.dimensions[0] - 2, 0);
 		
