@@ -7,7 +7,7 @@ export default class TitleScreen extends AbstractScreen {
 		super(textRenderer);
 	}
 	
-	render(canvas, ctx, dt) {
+	renderBg(canvas, ctx, dt) {
 		
 	}
 	

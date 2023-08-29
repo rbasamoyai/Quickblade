@@ -3,6 +3,8 @@ import ServerInputHandler from "./ServerInputHandler.js";
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
 
+import PlayerAppearance from "../common/entity/PlayerAppearance.js";
+
 import LevelGenerator from "../common/level/generation/LevelGenerator.js";
 
 import logMessage from "../common/Logging.js";
@@ -34,6 +36,7 @@ onmessage = evt => {
 			break;
 		}
 		case "qb:client_ready": {
+			initController(evt.data.appearance);
 			clientReady = true;
 			logMessage("Client ready, server starting.");
 			break;
@@ -48,6 +51,8 @@ let updateControl = null;
 let stopped = false;
 
 async function onLevelGenerate(seed) {
+	clientReady = false;
+	
 	let levelGenerator = new LevelGenerator(seed, logMessage);
 	serverLevel = await levelGenerator.generateLevel(console.log);
 	serverLevel.setPaused(true);
@@ -71,23 +76,25 @@ async function onLevelGenerate(seed) {
 			});
 		}
 	}
-	initController();
 }
 
-function initController() {
+function initController(appearance) {
 	if (!serverLevel) return;
 	let mainLayer = serverLevel.getLayer(0);
+	
 	controlledEntity = QBEntities.PLAYER.create(0, 0, serverLevel, mainLayer);
+	controlledEntity.appearance = new PlayerAppearance(appearance.skinColor, appearance.eyeColor);
 	//controlledEntity.noGravity = true;
+	
 	serverLevel.addTicked(controlledEntity, 0);
 	serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 
 	input.setEntity(controlledEntity);
 	updateControl = controlledEntity.id;
 
-	let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
-	serverLevel.addTicked(otherEntity, 0);
-	serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+	//let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+	//serverLevel.addTicked(otherEntity, 0);
+	//serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 }
 
 function mainloop() {

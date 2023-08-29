@@ -8,49 +8,54 @@ const INVALID_POINT = "?".charCodeAt(0);
 
 export class TextRenderer extends ImageResource {
 
+	#bufferCanvas = new OffscreenCanvas(256, 8);
+
 	constructor(image) {
 		super(image);
 	}
 	
-	render(ctx, text, align = LEFT_ALIGN, tint = "white") {
+	render(ctx, text, x, y, align = LEFT_ALIGN, scale = 1, tint = "white") {
 		if (!this.resourceReady || text.length < 1) return;
-		let uw = Math.floor(this.imageResource.width / 16);
-		let uh = Math.floor(this.imageResource.height / 16);
 		
-		ctx.save();
-		switch (align) {
-			case RIGHT_ALIGN: {
-				ctx.translate(-uw * text.length, 0);
-				break;
-			}
-			case CENTER_ALIGN: {
-				ctx.translate(Math.floor(-uw * text.length / 2), 0);
-				break;
-			}
-		}
+		let bufctx = this.#bufferCanvas.getContext("2d");
+		bufctx.globalAlpha = 0;
+		bufctx.fillRect(0, 0, this.#bufferCanvas.width, this.#bufferCanvas.height);
+		bufctx.globalAlpha = 1;
 		
-		let oldFill = ctx.fillStyle;
-		
-		ctx.imageSmoothingEnabled = false;
-		
+		bufctx.imageSmoothingEnabled = false;
+		bufctx.globalCompositeOperation = "source-over";
+		bufctx.save();
 		for (const c of text) {
 			let point = c.charCodeAt(0);
 			if (point > 255) point = INVALID_POINT;
-			let px = point % 16 * uw;
-			let py = Math.floor(point / 16) * uh;
-			
-			ctx.fillStyle = tint;
-			ctx.globalCompositeOperation = "source-over";
-			ctx.drawImage(this.imageResource, px, py, uw, uh, 0, 0, uw, uh);
-			ctx.globalCompositeOperation = "multiply";
-			ctx.fillRect(0, 0, uw, uh);
-			
-			ctx.translate(uw, 0);
+			let px = point % 16 * 8;
+			let py = Math.floor(point / 16) * 8;
+			bufctx.drawImage(this.imageResource, px, py, 8, 8, 0, 0, 8, 8);
+			bufctx.translate(8, 0);
+		}
+		bufctx.restore();
+		bufctx.globalCompositeOperation = "source-in";
+		bufctx.fillStyle = tint;
+		bufctx.fillRect(0, 0, text.length * 8, 8);
+		
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.scale(scale, scale);
+		switch (align) {
+			case RIGHT_ALIGN: {
+				ctx.translate(-8 * text.length, 0);
+				break;
+			}
+			case CENTER_ALIGN: {
+				ctx.translate(Math.floor(-4 * text.length), 0);
+				break;
+			}
 		}
 		
+		ctx.imageSmoothingEnabled = false;
+		ctx.drawImage(this.#bufferCanvas, 0, 0, text.length * 8, 8, 0, 0, text.length * 8, 8);
+		
 		ctx.restore();
-		ctx.fillStyle = oldFill;
-		ctx.globalCompositeOperation = "source-over";
 	}
 
 }

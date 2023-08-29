@@ -25,15 +25,20 @@ import { Creature } from "../common/entity/Creature.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
-import * as EntityTextures from "../common/entity/textures/EntityTextures.js";
+
+import "../common/entity/textures/EntityTextures.js";
+import "./rendering/screens/widgets/WidgetTextures.js";
 
 import logMessage from "../common/Logging.js";
 import BiIntMap from "../common/BiIntMap.js";
 import Vec2 from "../common/Vec2.js";
 
 import TitleScreen from "./rendering/screens/TitleScreen.js";
+import PlayerAppearanceScreen from "./rendering/screens/PlayerAppearanceScreen.js";
 import LoadingScreen from "./rendering/screens/LoadingScreen.js";
 import DeathScreen from "./rendering/screens/DeathScreen.js";
+
+import PlayerAppearance from "../common/entity/PlayerAppearance.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -46,17 +51,13 @@ const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" }
 const RANDOM = new QBRandom(null);
 
 const RENDER_LEVEL = 0;
-const RENDER_DEATH_SCREEN = 1;
-const RENDER_LOADING_SCREEN = 2;
-const RENDER_TITLE_SCREEN = 3;
-const RENDER_CUSTOMIZATION_SCREEN = 4;
+const RENDER_ONLY_SCREEN = 1;
 
 let RENDER_DEBUG_INFO = false;
 
 const textRenderer = new TextRenderer.TextRenderer("ui/font");
 
 const camera = new Camera();
-let gameState = RENDER_LOADING_SCREEN;
 let controlledEntity = null;
 
 let levelDataQueue = [];
@@ -65,6 +66,7 @@ let expectedLayers = null;
 let loadLayers = null;
 let busy = false;
 
+let renderLevel = false;
 let clientLevel = null;
 let currentScreen = null;
 
@@ -75,7 +77,7 @@ worker.onmessage = evt => {
 			loadLayers = new Map();
 			pumpLayerDataQueue();
 			
-			gameState = RENDER_LOADING_SCREEN;
+			renderLevel = false;
 			break;
 		}
 		case "qb:load_level_data_packet": {
@@ -121,7 +123,12 @@ let lastTickMs = new Date().getTime();
 
 let stopped = false;
 
-requestNewLevel(1);
+let appearance = null;
+
+setScreen(new PlayerAppearanceScreen(textRenderer, p => {
+	appearance = p;
+	requestNewLevel(1);
+}));
 
 function requestNewLevel(seed) {
 	clientLevel = null;
@@ -136,7 +143,6 @@ function setScreen(screen) {
 
 function pumpLayerDataQueue(layer, chunk) {
 	let p = 0;
-	let MAX_ITERS = 100;
 	while (levelDataQueue.length > 0 && p++ < 3) {
 		let data = levelDataQueue.shift();
 		if (!expectedLayers.has(data.layer)) continue;
@@ -177,9 +183,12 @@ function trySettingReady() {
 	expectedLayers = null;
 	loadLayers = null;
 	
-	gameState = RENDER_LEVEL;
+	renderLevel = true;
 	logMessage("Client is ready.")
-	worker.postMessage({ type: "qb:client_ready" });
+	
+	if (!appearance) appearance = PlayerAppearance.random();
+	worker.postMessage({ type: "qb:client_ready", appearance: appearance });
+	appearance = null;
 	setScreen(null);
 	return true;
 }
@@ -191,9 +200,13 @@ function mainRender() {
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
+	if (currentScreen?.isClosed()) {
+		setScreen(null);
+	}
+	
 	ctx.save();
 	
-	if (gameState == RENDER_LEVEL && clientLevel) {
+	if (renderLevel && clientLevel) {
 		ctx.save();
 		ctx.scale(SCALE, -SCALE);
 		ctx.translate(0, -15);
@@ -202,7 +215,7 @@ function mainRender() {
 		clientLevel.render(ctx, dt, SNAP_SCALE);	
 		ctx.restore();
 		
-		if (tracked) {
+		if (tracked && !currentScreen) {
 			ctx.strokeStyle = "#FFFF00";
 			ctx.globalAlpha = 1;
 			ctx.lineWidth = 0.125;
@@ -243,36 +256,29 @@ function mainRender() {
 		ctx.restore();
 	}
 	
-	if (gameState == RENDER_LEVEL && clientLevel && isControlling()) {
+	ctx.restore();
+	
+	ctx.save();
+	ctx.scale(2, 2);
+	
+	if (currentScreen) {
+		ctx.save();
+		currentScreen.render(canvas, ctx, dt);
+		ctx.restore();
+	} else if (renderLevel && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		if (entity instanceof Creature) {
-			ctx.save();
-			ctx.translate(0, 400);
-			ctx.scale(2, 2);
-			textRenderer.render(ctx, `HP:${entity.hp}/${entity.maxHp}`);
-			ctx.restore();
+			textRenderer.render(ctx, `HP:${entity.hp}/${entity.maxHp}`, 0, 0);
 		}
 	}
 	
-	ctx.save();
-	currentScreen?.render(canvas, ctx, dt);
-	ctx.restore();
-	
 	if (RENDER_DEBUG_INFO) {
-		ctx.save();
-		ctx.scale(2, 2);
-		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`);
-		ctx.restore();
-	
+		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 240);
 		if (clientLevel && isControlling()) {
 			let entity = clientLevel.getEntityById(controlledEntity);
 			let x = entity.x.toFixed(3);
 			let y = entity.y.toFixed(3);
-			ctx.save();
-			ctx.translate(0, 16);
-			ctx.scale(2, 2);
-			textRenderer.render(ctx, `Pos:(${x},${y})`);
-			ctx.restore();
+			textRenderer.render(ctx, `Pos:(${x},${y})`, 0, 248);
 		}
 	}
 	
@@ -325,12 +331,21 @@ document.onmousedown = evt => {
 
 
 canvas.onmousemove = evt => {
+	let ox = mouseX;
+	let oy = mouseY;
 	mouseX = evt.offsetX / canvas.width;
 	mouseY = evt.offsetY / canvas.height;
+	currentScreen?.onMouseMove(mouseX * 256, mouseY * 240, ox * 256, oy * 240);
+};
+
+canvas.oncontextmenu = evt => {
+	return false;
 };
 
 canvas.onclick = evt => {
-	if (inputMode === "jump" && clientLevel && camera && tracked) {
+	if (currentScreen) {
+		currentScreen.onMouseClick(mouseX, mouseY);
+	} else if (inputMode === "jump" && clientLevel && camera && tracked) {
 		let ds = tracked.displacement(0);
 		let inputVec = [camera.x - ds.x + mouseX * 16 - 8, camera.y - ds.y + mouseY * -15 + 8];
 		worker.postMessage({

@@ -7,15 +7,10 @@ export default class DeathScreen extends AbstractScreen {
 		super(textRenderer);
 	}
 	
-	render(canvas, ctx, dt) {
+	renderBg(canvas, ctx, dt) {
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		
-		ctx.save();
-		ctx.translate(canvas.width / 2, 208);
-		ctx.scale(4, 4);
-		this.textRenderer.render(ctx, "YOU DIED", TextRenderer.CENTER_ALIGN, "crimson");
-		ctx.restore();
+		this.textRenderer.render(ctx, "YOU DIED", 128, 104, TextRenderer.CENTER_ALIGN, 2, "#D81038");
 	}
 	
 	pausesLevel(level) { return true; }

@@ -2,6 +2,7 @@ import { Creature } from "./Creature.js";
 import { Monster } from "./Monster.js";
 import { AABB } from "../Collision.js";
 import * as EntityTextures from "./textures/EntityTextures.js";
+import PlayerAppearance from "./PlayerAppearance.js";
 
 import Vec2 from "../Vec2.js";
 
@@ -16,15 +17,21 @@ export class Player extends Creature {
 	#coyoteTime = 0;
 	#runTime = 0;
 	
+	#appearance = PlayerAppearance.random();
+	
 	constructor(x, y, level, layer, id, type) {
 		super(x, y, level, layer, id, type);
 	}
+	
+	set appearance(a) { this.#appearance = a; }
 	
 	getUpdateSnapshot() {
 		let result = super.getUpdateSnapshot();
 		result.isAttacking = this.#isAttacking;
 		result.invulnerability = this.#invulnerability;
 		result.runTime = this.#runTime;
+		result.skinColor = this.#appearance.skinColor;
+		result.eyeColor = this.#appearance.eyeColor;
 		return result;
 	}
 	
@@ -33,6 +40,7 @@ export class Player extends Creature {
 		this.#isAttacking = data.isAttacking;
 		this.#invulnerability = data.invulnerability;
 		this.#runTime = data.runTime;
+		this.#appearance = new PlayerAppearance(data.skinColor, data.eyeColor);
 	}
 	
 	isInvulnerable() { return super.isInvulnerable() || this.#invulnerability > 0; }
@@ -107,11 +115,9 @@ export class Player extends Creature {
 	
 	render(ctx, dt) {
 		// TODO: customization, armor
-		let skinColor = 1;
-		let eyeColor = 0;
 		
-		let playerTextures = EntityTextures.PLAYER_BODY[skinColor];
-		let eyes = EntityTextures.PLAYER_EYES[eyeColor];
+		let playerTextures = EntityTextures.PLAYER_BODY[this.#appearance.skinColor];
+		let eyes = EntityTextures.PLAYER_EYES[this.#appearance.eyeColor];
 		let top = EntityTextures.TUNIC;
 		let shoes = EntityTextures.SANDALS;
 		
