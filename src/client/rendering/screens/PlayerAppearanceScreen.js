@@ -63,7 +63,7 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		// Render player
 		ctx.save();
 		ctx.translate(128, 72);
-		ctx.transform(3, 0, 0, 3, 3, 0);
+		ctx.transform(-3, 0, 0, 3, 104, 0);
 		ctx.imageSmoothingEnabled = false;
 		
 		let playerTextures = EntityTextures.PLAYER_BODY[this.#skinColor];
