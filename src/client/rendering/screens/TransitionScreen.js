@@ -9,8 +9,8 @@ export default class TransitionScreen extends AbstractScreen {
 	#halfTime;
 	#fadeColor;
 	
-	constructor(textRenderer, beforeScreen, afterScreen, screenChange, time, fadeColor = "black") {
-		super(textRenderer);
+	constructor(beforeScreen, afterScreen, screenChange, time, fadeColor = "black") {
+		super();
 		this.#beforeScreen = beforeScreen;
 		this.#afterScreen = afterScreen;
 		this.#screenChange = screenChange;

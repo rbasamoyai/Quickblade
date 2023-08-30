@@ -60,8 +60,6 @@ const RANDOM = new QBRandom(null);
 const RENDER_LEVEL = 0;
 const RENDER_ONLY_SCREEN = 1;
 
-const textRenderer = new TextRenderer.TextRenderer("ui/font");
-
 const camera = new Camera();
 let controlledEntity = null;
 
@@ -110,7 +108,7 @@ worker.onmessage = evt => {
 		case "qb:player_dead": {
 			controlledEntity = null;
 			clientLevel = null;
-			setScreen(new DeathScreen(textRenderer));
+			setScreen(new DeathScreen());
 			break;
 		}
 		case "qb:notification": {
@@ -139,10 +137,10 @@ let stopped = false;
 
 let appearance = null;
 
-setScreen(new TitleScreen(textRenderer, (v, screen) => {
+setScreen(new TitleScreen((v, screen) => {
 	switch (v) {
 		case 0: {
-			return new PlayerAppearanceScreen(textRenderer, p => {
+			return new PlayerAppearanceScreen(p => {
 				appearance = p;
 				requestNewLevel(1);
 			});
@@ -152,7 +150,7 @@ setScreen(new TitleScreen(textRenderer, (v, screen) => {
 			break;
 		}
 		case 2: {
-			return new CreditsScreen(textRenderer, screen, setScreen);
+			return new CreditsScreen(screen, setScreen);
 		}
 	}
 	return null;
@@ -160,7 +158,7 @@ setScreen(new TitleScreen(textRenderer, (v, screen) => {
 
 function requestNewLevel(seed) {
 	clientLevel = null;
-	setScreen(new LoadingScreen(textRenderer));
+	setScreen(new LoadingScreen());
 	worker.postMessage({ type: "qb:generate_new_level", seed: seed });
 }
 
@@ -292,7 +290,7 @@ function mainRender() {
 	} else if (renderLevel && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		if (entity instanceof Creature) {
-			textRenderer.render(ctx, `HP:${entity.hp}/${entity.maxHp}`, 0, 0);
+			WidgetTextures.TEXT.render(ctx, `HP:${entity.hp}/${entity.maxHp}`, 0, 0);
 		}
 	}
 	
@@ -316,7 +314,7 @@ function mainRender() {
 				let scroll = Math.floor(-8 * extraText * prog);
 				bufctx.translate(scroll, 0);
 			}
-			textRenderer.render(bufctx, notif, 0, 0, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+			WidgetTextures.TEXT.render(bufctx, notif, 0, 0, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 			bufctx.restore();
 		}
 		
@@ -327,12 +325,12 @@ function mainRender() {
 	}
 	
 	if (RENDER_DEBUG_INFO) {
-		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 208);
+		WidgetTextures.TEXT.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 208);
 		if (clientLevel && isControlling()) {
 			let entity = clientLevel.getEntityById(controlledEntity);
 			let x = entity.x.toFixed(3);
 			let y = entity.y.toFixed(3);
-			textRenderer.render(ctx, `Pos:(${x},${y})`, 0, 216);
+			WidgetTextures.TEXT.render(ctx, `Pos:(${x},${y})`, 0, 216);
 		}
 	}
 	ctx.restore();

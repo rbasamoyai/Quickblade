@@ -15,8 +15,8 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 	#skinColor = randInt(0, 4);
 	#eyeColor = randInt(0, 5);
 	
-	constructor(textRenderer, confirmCallback) {
-		super(textRenderer);
+	constructor(confirmCallback) {
+		super();
 		
 		this.addWidget(WidgetTextures.daggerButton(this, true, 24, 96, b => this.#cycleSkin(-1)));
 		this.addWidget(WidgetTextures.daggerButton(this, false, 88, 96, b => this.#cycleSkin(1)));
@@ -24,7 +24,7 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		this.addWidget(WidgetTextures.daggerButton(this, true, 24, 112, b => this.#cycleEyes(-1)));
 		this.addWidget(WidgetTextures.daggerButton(this, false, 88, 112, b => this.#cycleEyes(1)));
 		
-		this.addWidget(new Button(this, 140, 184, 10, 3, "Confirm", this.textRenderer, b => confirmCallback(this.#createPlayerAppearance())));
+		this.addWidget(new Button(this, 140, 184, 10, 3, "Confirm", b => confirmCallback(this.#createPlayerAppearance())));
 	}
 	
 	renderBg(canvas, ctx, dt) {
@@ -52,9 +52,9 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 32, 24, 24, 3);
 		WidgetTextures.WINDOW.render(ctx, 16, 88, 12, 9);
-		this.textRenderer.render(ctx, "Player Appearance", 128, 32, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Skin", 64, 96, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Eyes", 64, 112, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Player Appearance", 128, 32, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Skin", 64, 96, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Eyes", 64, 112, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		
 		// Render player
 		ctx.save();

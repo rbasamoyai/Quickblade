@@ -13,8 +13,8 @@ export default class Button extends Widget {
 	#textScale;
 	#textColor;
 	
-	constructor(screen, x, y, tileWidth, tileHeight, text, textRenderer, clickCallback,
-	            regularBox = WidgetTextures.BUTTON, hoverBox = WidgetTextures.BUTTON_HOVERED, textScale = 1, textColor = "#806020") {
+	constructor(screen, x, y, tileWidth, tileHeight, text, clickCallback, regularBox = WidgetTextures.BUTTON,
+	            hoverBox = WidgetTextures.BUTTON_HOVERED, textRenderer = WidgetTextures.TEXT, textScale = 1, textColor = "#806020") {
 		super(screen, x, y, tileWidth * 8, tileHeight * 8, clickCallback, null, null);
 		this.#text = text;
 		this.#regularBox = regularBox;

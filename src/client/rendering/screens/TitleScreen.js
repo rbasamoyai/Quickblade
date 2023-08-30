@@ -14,8 +14,8 @@ export default class TitleScreen extends AbstractScreen {
 	#callback;
 	#screenChange;
 	
-	constructor(textRenderer, callback, screenChange) {
-		super(textRenderer);
+	constructor(callback, screenChange) {
+		super();
 		this.#callback = callback;
 		this.#screenChange = screenChange;
 		
@@ -49,14 +49,14 @@ export default class TitleScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 72, 144, 14, 5);
 		
-		this.textRenderer.render(ctx, "Start", 104, 152, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Settings", 104, 160, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Credits", 104, 168, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Start", 104, 152, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Settings", 104, 160, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Credits", 104, 168, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 	}
 	
 	#executeCallback(value) {
 		let screen = this.#callback(value, this);
-		if (screen) this.#screenChange(new TransitionScreen(this.textRenderer, this, screen, this.#screenChange, 2000));
+		if (screen) this.#screenChange(new TransitionScreen(this, screen, this.#screenChange, 2000));
 	}
 	
 	pausesLevel(level) { return true; }

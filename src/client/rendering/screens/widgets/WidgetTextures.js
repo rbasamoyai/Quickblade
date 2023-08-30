@@ -1,5 +1,6 @@
 import { ImageResource } from "../../../../common/resource_management/ResourceLoading.js";
 import BoxRenderer from "../../BoxRenderer.js";
+import { TextRenderer } from "../../TextRenderer.js";
 import Widget from "./Widget.js";
 
 export const BACKGROUND = new ImageResource("ui/background");
@@ -14,6 +15,7 @@ export const WINDOW = new BoxRenderer("ui/window");
 export const BUTTON = new BoxRenderer("ui/button");
 export const BUTTON_HOVERED = new BoxRenderer("ui/button_hovered");
 
+export const TEXT = new TextRenderer("ui/font");
 export const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export function daggerButton(screen, left, x, y, callback) {

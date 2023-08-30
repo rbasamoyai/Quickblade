@@ -13,15 +13,15 @@ export default class CreditsScreen extends AbstractScreen {
 	
 	#backButton;
 	
-	constructor(textRenderer, titleScreen, screenChange) {
-		super(textRenderer);
+	constructor(titleScreen, screenChange) {
+		super();
 		
 		this.#backButton = WidgetTextures.daggerButton(this, true, 16, 200, b => {
-			screenChange(new TransitionScreen(this.textRenderer, this, titleScreen, screenChange, 2000));
+			screenChange(new TransitionScreen(this, titleScreen, screenChange, 2000));
 		});
 		this.addWidget(this.#backButton);
 		
-		this.addWidget(new Button(this, 64, 168, 16, 3, "Go to source", this.textRenderer, b => {
+		this.addWidget(new Button(this, 64, 168, 16, 3, "Go to source", b => {
 			window.open("https://github.com/rbasamoyai/Quickblade", "_blank");
 		}));
 	}
@@ -51,14 +51,14 @@ export default class CreditsScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 24, 80, 26, 10);
 		
-		this.textRenderer.render(ctx, "Programming, Art,", 32, 88, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "and Design", 32, 96, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "rbasamoyai", 224, 104, TextRenderer.RIGHT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "2023", 128, 120, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "MIT License", 128, 128, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "Programming, Art,", 32, 88, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "and Design", 32, 96, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "rbasamoyai", 224, 104, TextRenderer.RIGHT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "2023", 128, 120, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		WidgetTextures.TEXT.render(ctx, "MIT License", 128, 128, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		
 		if (this.#backButton.isHovered()) {
-			this.textRenderer.render(ctx, "Back to title screen", 40, 200, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+			WidgetTextures.TEXT.render(ctx, "Back to title screen", 40, 200, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		}
 	}
 	

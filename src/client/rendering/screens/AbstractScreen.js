@@ -1,13 +1,11 @@
 export default class AbstractScreen {
-
-	#textRenderer;
+	
 	#widgets = [];
 	#closed = false;
 
 	#startTime = Date.now();
 
-	constructor(textRenderer) {
-		this.#textRenderer = textRenderer;
+	constructor() {
 	}
 	
 	render(canvas, ctx, dt) {
@@ -20,8 +18,6 @@ export default class AbstractScreen {
 	renderBg(canvas, ctx, dt) {}
 	
 	pausesLevel(level) {}
-	
-	get textRenderer() { return this.#textRenderer; }
 	
 	addWidget(widget) {
 		this.#widgets.push(widget);
