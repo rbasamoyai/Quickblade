@@ -76,10 +76,10 @@ export class Entity {
 	tick() {
 		this.#oldPos = this.#pos;
 		
-		if (!this.hasNoGravity() && !this.isOnGround()) {
+		if (!this.hasNoGravity()) {
 			this.setVelocity(new Vec2(this.dx, this.dy - 0.02));
 		}
-		
+		this.setVelocity(this.vel.roundOffEps());
 		this.moveAndCollide();	
 		
 		this.move(this.dx, this.dy);
@@ -104,7 +104,14 @@ export class Entity {
 				let tile = this.layer.getTile(tx, ty);
 				if (!tile.canCollide(this)) continue;
 				let result = aabb.collideBox(new AABB(tx, ty, 1, 1), testVel);
-				if (!result.hit) continue;
+				if (!result.hit || !Number.isFinite(result.face)) continue;
+				
+				let normal = Direction.normal(result.face);
+				let nextTile = this.layer.getTile(tx + normal.x, ty + normal.y);
+				if (nextTile.canCollide(this) && tile.getTileLength(result.face) <= nextTile.getTileLength(Direction.opposite(result.face))) {
+					continue;
+				}
+				
 				result.tx = tx;
 				result.ty = ty;
 				results.push(result);
@@ -115,20 +122,13 @@ export class Entity {
 		// Second pass: push
 		let onGround = false;
 		for (const res of results) {
-			onGround ||= res.face === Direction.UP;
 			let res1 = aabb.collideBox(new AABB(res.tx, res.ty, 1, 1), this.vel);
-			if (!res1.hit || !res1.face && res1.face !== 0) continue;
-			this.pushOff(res.tx, res.ty, res1.face, res1.time);
-			onGround &&= res1.face === Direction.UP;
+			if (!res1.hit || !Number.isFinite(res1.face)) continue;
+			let tile = this.layer.getTile(res.tx, res.ty);
+			tile.pushOff(this, res.tx, res.ty, res1.face, res1.time);
+			onGround ||= res1.face === Direction.UP;
 		}
 		this.#isOnGround = onGround;
-	}
-	
-	pushOff(tx, ty, face, time) {
-		let cn = Direction.normal(face);
-		let absVel = new Vec2(Math.abs(this.dx), Math.abs(this.dy));
-		let add = cn.multiplyVec(absVel).scale(1 - time);
-		this.setVelocity(this.vel.addVec(add));
 	}
 	
 	getAABB() {

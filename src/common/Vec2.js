@@ -30,6 +30,10 @@ export default class Vec2 {
 	
 	dot(vec) { return this.x * vec.x + this.y * vec.y; }
 	
+	roundOffEps() {
+		return new Vec2(Math.round((this.x + Number.EPSILON) * 1e4) * 1e-4, Math.round((this.y + Number.EPSILON) * 1e4) * 1e-4);
+	}
+	
 	toArray() { return [this.x, this.y]; }
 	
 }

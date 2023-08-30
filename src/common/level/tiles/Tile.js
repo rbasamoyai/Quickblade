@@ -1,4 +1,6 @@
 import { ImageResource } from "../../resource_management/ResourceLoading.js";
+import * as Direction from "../../Direction.js";
+import Vec2 from "../../Vec2.js";
 
 export class Tile extends ImageResource {
 	
@@ -22,6 +24,17 @@ export class Tile extends ImageResource {
 	}
 	
 	get replaceable() { return this.#replaceable; }
+	
+	getTileLength(dir) {
+		return 1;
+	}
+	
+	pushOff(entity, tx, ty, face, time) {
+		let cn = Direction.normal(face);
+		let absVel = new Vec2(Math.abs(entity.dx), Math.abs(entity.dy));
+		let add = cn.multiplyVec(absVel).scale(1 - time);
+		entity.setVelocity(entity.vel.addVec(add));
+	}
 	
 }
 

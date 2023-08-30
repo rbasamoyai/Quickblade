@@ -15,5 +15,5 @@ export function getFromId(id) {
 	return types.get(id);
 }
 
-export const PLAYER = register("qb:player", Player, new CreatureProperties().maxHpCount(20).dimensions(1, 2));
+export const PLAYER = register("qb:player", Player, new CreatureProperties().maxHpCount(20).dimensions(0.8, 1.4));
 export const IMP = register("qb:imp", Monster, new CreatureProperties().maxHpCount(10).dimensions(1, 2));

@@ -24,13 +24,13 @@ export class AABB {
 	
 	collideBox(other, thisVel = Vec2.ZERO, otherVel = Vec2.ZERO) {	
 		let mainBox = other.conflate(this);
-		let startPoint = this.centerPoint();
+		let startPoint = this.centerPoint().roundOffEps();
 		
 		let relVel = thisVel.subtractVec(otherVel);
 		let relVelR = new Vec2(1 / relVel.x, 1 / relVel.y);
-		let transl = mainBox.bottomLeft.subtractVec(startPoint);
+		let transl = mainBox.bottomLeft.roundOffEps().subtractVec(startPoint);
 		let near = transl.multiplyVec(relVelR);
-		let far = transl.add(mainBox.width, mainBox.height).multiplyVec(relVelR);
+		let far = transl.add(mainBox.width, mainBox.height).roundOffEps().multiplyVec(relVelR);
 		if (Number.isNaN(near.x) || Number.isNaN(far.x) || Number.isNaN(near.y) || Number.isNaN(far.y)) return HitResult.miss();
 		if (near.x > far.x) {
 			let tmp = near.x;
