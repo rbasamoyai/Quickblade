@@ -30,6 +30,8 @@ export default class Widget {
 		this.#isHovered = this.#x <= mouseX && mouseX < this.#x + this.#width && this.#y <= mouseY && mouseY < this.#y + this.#height;
 	}
 	
+	setHoveredForce(value) { this.#isHovered = value; }
+	
 	invokeCallback() {
 		this.#clickCallback(this);
 	}

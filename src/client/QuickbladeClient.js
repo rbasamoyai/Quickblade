@@ -38,6 +38,7 @@ import BiIntMap from "../common/BiIntMap.js";
 import Vec2 from "../common/Vec2.js";
 
 import TitleScreen from "./rendering/screens/TitleScreen.js";
+import CreditsScreen from "./rendering/screens/CreditsScreen.js";
 import PlayerAppearanceScreen from "./rendering/screens/PlayerAppearanceScreen.js";
 import LoadingScreen from "./rendering/screens/LoadingScreen.js";
 import DeathScreen from "./rendering/screens/DeathScreen.js";
@@ -140,8 +141,7 @@ setScreen(new TitleScreen(textRenderer, (v, screen) => {
 			break;
 		}
 		case 2: {
-			// Credits
-			break;
+			return new CreditsScreen(textRenderer, screen, setScreen);
 		}
 	}
 	return null;

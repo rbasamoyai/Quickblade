@@ -43,5 +43,11 @@ export default class AbstractScreen {
 	isClosed() { return this.#closed; }
 	
 	timeElapsed() { return Date.now() - this.#startTime; }
+	
+	reset() {
+		for (const widget of this.#widgets) {
+			widget.setHoveredForce(false);
+		}
+	}
 
 }

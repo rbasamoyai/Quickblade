@@ -7,7 +7,7 @@ import * as WidgetTextures from "./widgets/WidgetTextures.js";
 import { ImageResource } from "../../../common/resource_management/ResourceLoading.js";
 import TransitionScreen from "./TransitionScreen.js";
 
-const TITLE_GRAPHIC = new ImageResource("ui/title");
+export const TITLE_GRAPHIC = new ImageResource("ui/title");
 const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export default class TitleScreen extends AbstractScreen {
@@ -56,7 +56,7 @@ export default class TitleScreen extends AbstractScreen {
 	}
 	
 	#executeCallback(value) {
-		let screen = this.#callback(value);
+		let screen = this.#callback(value, this);
 		if (screen) this.#screenChange(new TransitionScreen(this.textRenderer, this, screen, this.#screenChange, 2000));
 	}
 	

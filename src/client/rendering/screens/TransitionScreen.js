@@ -26,11 +26,13 @@ export default class TransitionScreen extends AbstractScreen {
 			ctx.fillStyle = this.#fadeColor;
 			ctx.globalAlpha = clamp(time / this.#halfTime, 0, 1);
 			ctx.fillRect(0, 0, 256, 224);
+			this.#afterScreen?.reset();
 		} else if (time < this.#time) {
 			this.#afterScreen?.render(canvas, ctx, dt);
 			ctx.fillStyle = this.#fadeColor;
 			ctx.globalAlpha = clamp(1 - (time - this.#halfTime) / this.#halfTime, 0, 1);
 			ctx.fillRect(0, 0, 256, 224);
+			this.#beforeScreen?.reset();
 		} else {
 			this.#afterScreen?.render(canvas, ctx, dt);
 			this.#screenChange(this.#afterScreen);
