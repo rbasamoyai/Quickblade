@@ -9,7 +9,6 @@ import * as WidgetTextures from "./widgets/WidgetTextures.js";
 import * as EntityTextures from "../../../common/entity/textures/EntityTextures.js";
 
 const MIRROR = new ImageResource("ui/mirror");
-const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export default class PlayerAppearanceScreen extends AbstractScreen {
 	
@@ -53,9 +52,9 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 32, 24, 24, 3);
 		WidgetTextures.WINDOW.render(ctx, 16, 88, 12, 9);
-		this.textRenderer.render(ctx, "Player Appearance", 128, 32, TextRenderer.CENTER_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Skin", 64, 96, TextRenderer.CENTER_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Eyes", 64, 112, TextRenderer.CENTER_ALIGN, 1, ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Player Appearance", 128, 32, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Skin", 64, 96, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Eyes", 64, 112, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		
 		// Render player
 		ctx.save();

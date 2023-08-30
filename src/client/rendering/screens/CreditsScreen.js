@@ -8,7 +8,6 @@ import { ImageResource } from "../../../common/resource_management/ResourceLoadi
 import TransitionScreen from "./TransitionScreen.js";
 
 import { TITLE_GRAPHIC } from "./TitleScreen.js";
-const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export default class CreditsScreen extends AbstractScreen {
 	
@@ -52,14 +51,14 @@ export default class CreditsScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 24, 80, 26, 10);
 		
-		this.textRenderer.render(ctx, "Programming, Art,", 32, 88, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "and Design", 32, 96, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "rbasamoyai", 224, 104, TextRenderer.RIGHT_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "2023", 128, 120, TextRenderer.CENTER_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "MIT License", 128, 128, TextRenderer.CENTER_ALIGN, 1, ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Programming, Art,", 32, 88, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "and Design", 32, 96, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "rbasamoyai", 224, 104, TextRenderer.RIGHT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "2023", 128, 120, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "MIT License", 128, 128, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		
 		if (this.#backButton.isHovered()) {
-			this.textRenderer.render(ctx, "Back to title screen", 40, 200, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
+			this.textRenderer.render(ctx, "Back to title screen", 40, 200, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 		}
 	}
 	

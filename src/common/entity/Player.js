@@ -19,6 +19,8 @@ export class Player extends Creature {
 	
 	#appearance = PlayerAppearance.random();
 	
+	#inventory = [];
+	
 	constructor(x, y, level, layer, id, type) {
 		super(x, y, level, layer, id, type);
 	}
@@ -143,6 +145,34 @@ export class Player extends Creature {
 		ctx.drawImage(eyes.imageResource, ax, ay, 32, 32, 0, 0, 2, 2);
 		
 		ctx.restore();
+	}
+	
+	pickUp(itemEntity) {
+		if (itemEntity.isEmpty()) return;
+		let item = itemEntity.getItem();
+		let oldCount = itemEntity.getItemCount();
+		let count = oldCount;
+		let stacksCountItem = 0;
+		for (let i = 0; i < this.#inventory.length; ++i) {
+			let entry = this.#inventory[i];
+			let otherItem = entry[0];
+			if (otherItem !== item) continue;
+			++stacksCountItem;
+			let maxDiff = item.stacksTo - entry[1];
+			if (maxDiff < 1) continue;
+			let addedCount = Math.min(maxDiff, count);
+			entry[1] += addedCount;
+			itemEntity.setItem(item, count - addedCount);
+			count = itemEntity.getItemCount();
+		}
+		if (count > 0 && stacksCountItem < item.maxStacks) {
+			this.#inventory.push([item, count]);
+			itemEntity.setItem(null, 0);
+		}
+		count = itemEntity.getItemCount();
+		if (count !== oldCount) {
+			postMessage?.({ type: "qb:notification", id: this.id, text: `Picked up ${item.name} x${oldCount - count}` });
+		}
 	}
 	
 }

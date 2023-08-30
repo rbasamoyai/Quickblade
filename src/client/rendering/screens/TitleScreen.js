@@ -8,7 +8,6 @@ import { ImageResource } from "../../../common/resource_management/ResourceLoadi
 import TransitionScreen from "./TransitionScreen.js";
 
 export const TITLE_GRAPHIC = new ImageResource("ui/title");
-const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export default class TitleScreen extends AbstractScreen {
 	
@@ -50,9 +49,9 @@ export default class TitleScreen extends AbstractScreen {
 		
 		WidgetTextures.WINDOW.render(ctx, 72, 144, 14, 5);
 		
-		this.textRenderer.render(ctx, "Start", 104, 152, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Settings", 104, 160, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
-		this.textRenderer.render(ctx, "Credits", 104, 168, TextRenderer.LEFT_ALIGN, 1, ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Start", 104, 152, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Settings", 104, 160, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+		this.textRenderer.render(ctx, "Credits", 104, 168, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
 	}
 	
 	#executeCallback(value) {

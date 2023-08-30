@@ -14,6 +14,8 @@ export const WINDOW = new BoxRenderer("ui/window");
 export const BUTTON = new BoxRenderer("ui/button");
 export const BUTTON_HOVERED = new BoxRenderer("ui/button_hovered");
 
+export const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
+
 export function daggerButton(screen, left, x, y, callback) {
 	return new Widget(screen, x, y, 16, 8, callback, left ? SELECTOR_LEFT : SELECTOR_RIGHT, left ? SELECTOR_LEFT_HOVERED : SELECTOR_RIGHT_HOVERED);
 }

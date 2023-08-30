@@ -7,6 +7,7 @@ export class Tile extends ImageResource {
 	#canCollide;
 	#noRender;
 	#replaceable;
+	#imageSize;
 	
 	constructor(properties) {
 		super(properties.textureV);
@@ -43,6 +44,7 @@ export class TileProperties {
 	canCollideV = false;
 	noRenderV = false;
 	replaceableV = false;
+	textureSize = 16;
 	textureV;
 	
 	constructor(texture) {

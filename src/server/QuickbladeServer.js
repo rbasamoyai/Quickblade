@@ -2,6 +2,7 @@ import ServerInputHandler from "./ServerInputHandler.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
+import * as QBItems from "../common/index/QBItems.js";
 
 import PlayerAppearance from "../common/entity/PlayerAppearance.js";
 
@@ -76,6 +77,17 @@ async function onLevelGenerate(seed) {
 			});
 		}
 	}
+	
+	let mainLayer = serverLevel.getLayer(0);
+	
+	let item = QBEntities.ITEM.create(4, 0, serverLevel, mainLayer);
+	item.setItem(QBItems.GOLD, 8);
+	serverLevel.addTicked(item, 0);
+	serverLevel.snapshots.push(item.getLoadSnapshot());
+	
+	//let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
+	//serverLevel.addTicked(otherEntity, 0);
+	//serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 }
 
 function initController(appearance) {
@@ -91,10 +103,6 @@ function initController(appearance) {
 
 	input.setEntity(controlledEntity);
 	updateControl = controlledEntity.id;
-
-	//let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
-	//serverLevel.addTicked(otherEntity, 0);
-	//serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 }
 
 function mainloop() {

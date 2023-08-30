@@ -19,8 +19,8 @@ export function getFromIdNum(id) {
 }
 
 export function getIdKey(tile) {
-	for (const entry of tilesKey.entries()) {
-		if (entry.value === tile) return entry.key;
+	for (const [key, value] of tilesKey.entries()) {
+		if (value === tile) return key;
 	}
 	return null;
 }

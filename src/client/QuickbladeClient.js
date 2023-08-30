@@ -9,6 +9,7 @@ if (!window.Worker) {
 	stopErr("Web Workers are not supported by this browser");
 }
 
+
 const TICK_DT = 1 / 33;
 const UPSCALE = 3;
 const WORLD_SCREEN_SCALE = 16;
@@ -29,9 +30,10 @@ import { Creature } from "../common/entity/Creature.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
+import * as QBItems from "../common/index/QBItems.js";
 
 import "../common/entity/textures/EntityTextures.js";
-import "./rendering/screens/widgets/WidgetTextures.js";
+import * as WidgetTextures from "./rendering/screens/widgets/WidgetTextures.js";
 
 import logMessage from "../common/Logging.js";
 import BiIntMap from "../common/BiIntMap.js";
@@ -73,6 +75,10 @@ let renderLevel = false;
 let clientLevel = null;
 let currentScreen = null;
 
+const NOTIFICATION_CANVAS = new OffscreenCanvas(176, 8);
+let notificationQueue = [];
+let notifTimer = -1;
+
 worker.onmessage = evt => {
 	switch (evt.data.type) {
 		case "qb:expected_level_data": {
@@ -105,6 +111,11 @@ worker.onmessage = evt => {
 			controlledEntity = null;
 			clientLevel = null;
 			setScreen(new DeathScreen(textRenderer));
+			break;
+		}
+		case "qb:notification": {
+			if (controlledEntity !== evt.data.id) break;
+			notificationQueue.push(evt.data.text);
 			break;
 		}
 	}
@@ -285,6 +296,36 @@ function mainRender() {
 		}
 	}
 	
+	if (notificationQueue.length > 0) {
+		let notif = notificationQueue[0];
+		let extraText = Math.max(notif.length - 22, 0);
+		let textScrollTime = extraText * 250;
+		
+		let bufctx = NOTIFICATION_CANVAS.getContext("2d");
+		bufctx.clearRect(0, 0, NOTIFICATION_CANVAS.width, NOTIFICATION_CANVAS.height);
+		
+		notifTimer += curMs - lastFrameMs;
+		if (notifTimer > 3500 + textScrollTime) {
+			notifTimer = 0;
+			notificationQueue.shift();
+		} else if (notifTimer <= 3000 + textScrollTime) {
+			WidgetTextures.WINDOW.render(ctx, 32, 184, 24, 3);
+			bufctx.save();
+			if (extraText > 0) {
+				let prog = clamp((notifTimer - 1500) / textScrollTime, 0, 1);
+				let scroll = Math.floor(-8 * extraText * prog);
+				bufctx.translate(scroll, 0);
+			}
+			textRenderer.render(bufctx, notif, 0, 0, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+			bufctx.restore();
+		}
+		
+		ctx.save();
+		ctx.globalCompositeOperation = "source-over";
+		ctx.drawImage(NOTIFICATION_CANVAS, 40, 192);
+		ctx.restore();
+	}
+	
 	if (RENDER_DEBUG_INFO) {
 		textRenderer.render(ctx, `FPS:${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 208);
 		if (clientLevel && isControlling()) {
@@ -298,6 +339,11 @@ function mainRender() {
 	
 	lastFrameMs = curMs;
 	if (!stopped) window.requestAnimationFrame(mainRender);
+}
+
+function clamp(a, min, max) {
+	if (a < min) return min;
+	return a > max ? max : a;
 }
 
 function updateKbInput() {
