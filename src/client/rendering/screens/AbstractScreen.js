@@ -4,6 +4,8 @@ export default class AbstractScreen {
 	#widgets = [];
 	#closed = false;
 
+	#startTime = Date.now();
+
 	constructor(textRenderer) {
 		this.#textRenderer = textRenderer;
 	}
@@ -39,5 +41,7 @@ export default class AbstractScreen {
 	
 	close() { this.#closed = true; }
 	isClosed() { return this.#closed; }
+	
+	timeElapsed() { return Date.now() - this.#startTime; }
 
 }

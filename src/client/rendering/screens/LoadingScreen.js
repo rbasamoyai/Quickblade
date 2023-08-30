@@ -13,8 +13,7 @@ export default class LoadingScreen extends AbstractScreen {
 	renderBg(canvas, ctx, dt) {
 		ctx.fillStyle = "black";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		let diff = Date.now() - this.#startTime;
-		let count = Math.floor(diff / 500 % 4);
+		let count = Math.floor(this.timeElapsed() / 500 % 4);
 		let suffix = ".".repeat(count) + " ".repeat(3 - count);
 		this.textRenderer.render(ctx, "Loading" + suffix, 128, 104, TextRenderer.CENTER_ALIGN, 2);
 	}

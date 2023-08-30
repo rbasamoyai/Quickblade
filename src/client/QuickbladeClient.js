@@ -15,7 +15,7 @@ const WORLD_SCREEN_SCALE = 16;
 const SNAP_SCALE = 16;
 const SCREEN_WIDTH = 256;
 const SCREEN_HEIGHT = 224;
-let RENDER_DEBUG_INFO = true;
+let RENDER_DEBUG_INFO = false;
 
 import Level from "../common/level/Level.js";
 import { LevelChunk } from "../common/level/LevelChunk.js";
@@ -127,10 +127,25 @@ let stopped = false;
 
 let appearance = null;
 
-setScreen(new PlayerAppearanceScreen(textRenderer, p => {
-	appearance = p;
-	requestNewLevel(1);
-}));
+setScreen(new TitleScreen(textRenderer, (v, screen) => {
+	switch (v) {
+		case 0: {
+			return new PlayerAppearanceScreen(textRenderer, p => {
+				appearance = p;
+				requestNewLevel(1);
+			});
+		}
+		case 1: {
+			// Settings
+			break;
+		}
+		case 2: {
+			// Credits
+			break;
+		}
+	}
+	return null;
+}, setScreen));
 
 function requestNewLevel(seed) {
 	clientLevel = null;

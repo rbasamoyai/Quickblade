@@ -8,8 +8,7 @@ import * as TextRenderer from "../TextRenderer.js";
 import * as WidgetTextures from "./widgets/WidgetTextures.js";
 import * as EntityTextures from "../../../common/entity/textures/EntityTextures.js";
 
-const BACKGROUND = new ImageResource("ui/player_customization_0");
-const FRAME = new ImageResource("ui/player_customization_1");
+const MIRROR = new ImageResource("ui/mirror");
 const ROMAN_YELLOW = "#FFB800"; // Sourced from flag of Rome, adjusted for 16-bit color
 
 export default class PlayerAppearanceScreen extends AbstractScreen {
@@ -17,16 +16,14 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 	#skinColor = randInt(0, 4);
 	#eyeColor = randInt(0, 5);
 	
-	#startTime = Date.now();
-	
 	constructor(textRenderer, confirmCallback) {
 		super(textRenderer);
 		
-		this.addWidget(new Widget(this, 24, 96, 16, 8, b => this.#cycleSkin(-1), WidgetTextures.SELECTOR_LEFT, WidgetTextures.SELECTOR_LEFT_HOVERED));
-		this.addWidget(new Widget(this, 88, 96, 16, 8, b => this.#cycleSkin(1), WidgetTextures.SELECTOR_RIGHT, WidgetTextures.SELECTOR_RIGHT_HOVERED));
+		this.addWidget(WidgetTextures.daggerButton(this, true, 24, 96, b => this.#cycleSkin(-1)));
+		this.addWidget(WidgetTextures.daggerButton(this, false, 88, 96, b => this.#cycleSkin(1)));
 		
-		this.addWidget(new Widget(this, 24, 112, 16, 8, b => this.#cycleEyes(-1), WidgetTextures.SELECTOR_LEFT, WidgetTextures.SELECTOR_LEFT_HOVERED));
-		this.addWidget(new Widget(this, 88, 112, 16, 8, b => this.#cycleEyes(1), WidgetTextures.SELECTOR_RIGHT, WidgetTextures.SELECTOR_RIGHT_HOVERED));
+		this.addWidget(WidgetTextures.daggerButton(this, true, 24, 112, b => this.#cycleEyes(-1)));
+		this.addWidget(WidgetTextures.daggerButton(this, false, 88, 112, b => this.#cycleEyes(1)));
 		
 		this.addWidget(new Button(this, 140, 184, 10, 3, "Confirm", this.textRenderer, b => confirmCallback(this.#createPlayerAppearance())));
 	}
@@ -36,15 +33,14 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		ctx.imageSmoothingEnabled = false;
 		
-		let timeElapsed = Date.now() - this.#startTime;
-		let shift = Math.floor(timeElapsed / 1000 % 1 * 32);
+		let shift = Math.floor(this.timeElapsed() / 1000 % 1 * 32);
 		
 		ctx.save();
 		ctx.translate(shift - 32, 0);
 		for (let y = 0; y < 8; ++y) {
 			ctx.save();
 			for (let x = 0; x < 9; ++x) {
-				ctx.drawImage(BACKGROUND.imageResource, 0, 0);
+				ctx.drawImage(WidgetTextures.BACKGROUND.imageResource, 0, 0);
 				ctx.translate(32, 0);
 			}
 			ctx.restore();
@@ -52,7 +48,8 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		}
 		ctx.restore();
 		
-		ctx.drawImage(FRAME.imageResource, 0, 0);
+		ctx.drawImage(WidgetTextures.FRAME.imageResource, 0, 0);
+		ctx.drawImage(MIRROR.imageResource, 120, 56);
 		
 		WidgetTextures.WINDOW.render(ctx, 32, 24, 24, 3);
 		WidgetTextures.WINDOW.render(ctx, 16, 88, 12, 9);
