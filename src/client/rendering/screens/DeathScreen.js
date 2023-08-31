@@ -7,9 +7,9 @@ export default class DeathScreen extends AbstractScreen {
 		super();
 	}
 	
-	renderBg(canvas, ctx, dt) {
+	renderBg(ctx, dt) {
 		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.fillRect(0, 0, 256, 224);
 		WidgetTextures.TEXT.render(ctx, "YOU DIED", 128, 104, TextRenderer.CENTER_ALIGN, 2, "#D81038");
 	}
 	

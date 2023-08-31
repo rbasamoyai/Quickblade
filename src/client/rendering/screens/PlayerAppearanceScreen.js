@@ -27,9 +27,8 @@ export default class PlayerAppearanceScreen extends AbstractScreen {
 		this.addWidget(new Button(this, 140, 184, 10, 3, "Confirm", b => confirmCallback(this.#createPlayerAppearance())));
 	}
 	
-	renderBg(canvas, ctx, dt) {
-		ctx.fillStyle = "#0078B8";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+	renderBg(ctx, dt) {
+		ctx.clearRect(0, 0, 256, 224);
 		ctx.imageSmoothingEnabled = false;
 		
 		let shift = Math.floor(this.timeElapsed() / 1000 % 1 * 32);

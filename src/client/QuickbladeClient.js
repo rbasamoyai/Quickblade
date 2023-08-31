@@ -285,7 +285,7 @@ function mainRender() {
 	
 	if (currentScreen) {
 		ctx.save();
-		currentScreen.render(canvas, ctx, dt);
+		currentScreen.render(ctx, dt);
 		ctx.restore();
 	} else if (renderLevel && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);

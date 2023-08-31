@@ -26,10 +26,9 @@ export default class CreditsScreen extends AbstractScreen {
 		}));
 	}
 	
-	renderBg(canvas, ctx, dt) {
+	renderBg(ctx, dt) {
 		ctx.imageSmoothingEnabled = false;
-		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, 256, 224);
+		ctx.clearRect(0, 0, 256, 224);
 		
 		let shift = Math.floor(this.timeElapsed() / 1000 % 1 * 32);
 		

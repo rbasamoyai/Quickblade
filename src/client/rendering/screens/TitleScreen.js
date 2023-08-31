@@ -24,10 +24,9 @@ export default class TitleScreen extends AbstractScreen {
 		this.addWidget(WidgetTextures.daggerButton(this, false, 80, 168, b => this.#executeCallback(2)));
 	}
 	
-	renderBg(canvas, ctx, dt) {
+	renderBg(ctx, dt) {
 		ctx.imageSmoothingEnabled = false;
-		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, 256, 224);
+		ctx.clearRect(0, 0, 256, 224);
 		
 		let shift = Math.floor(this.timeElapsed() / 1000 % 1 * 32);
 		

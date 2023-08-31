@@ -15,7 +15,7 @@ export default class AbstractScreen {
 		}
 	}
 	
-	renderBg(canvas, ctx, dt) {}
+	renderBg(ctx, dt) {}
 	
 	pausesLevel(level) {}
 	
