@@ -9,6 +9,7 @@ export default class ServerInputHandler {
 	#rightImp = false;
 	#upImp = false;
 	#downImp = false;
+	#pickUp = false;
 	#entity = null;
 	#queuedJump = null;
 	#jumpBufferTime = 0;
@@ -21,6 +22,7 @@ export default class ServerInputHandler {
 		this.#rightImp = msg & 2;
 		this.#upImp = msg & 4;
 		this.#downImp = msg & 8;
+		this.#pickUp = msg & 16;
 	}
 	
 	handleJump(vec) {
@@ -92,6 +94,11 @@ export default class ServerInputHandler {
 		} else {
 			this.#jumpBufferTime = Math.max(0, this.#jumpBufferTime - 1);
 			if (this.#jumpBufferTime === 0) this.#queuedJump = null;
+		}
+
+		if (this.#pickUp) {
+			this.#entity.pickUpItems();
+			this.#pickUp = false;
 		}
 	}
 	

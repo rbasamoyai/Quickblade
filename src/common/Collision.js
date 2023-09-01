@@ -47,6 +47,9 @@ export class AABB {
 		let tNear = Math.max(near.x, near.y);
 		let tFar = Math.min(far.x, far.y);
 		if (tNear >= 1 || tFar <= 0) return HitResult.miss();
+		if (!Number.isFinite(tNear) && !Number.isFinite(tFar)) {
+			return HitResult.hit(startPoint, 0, Direction.UP);
+		}
 		
 		if (tNear < 0 && Math.abs(tNear) > Math.abs(tFar)) {
 			let pos = startPoint.addVec(thisVel.scale(tFar));

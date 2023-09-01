@@ -1,6 +1,7 @@
 import { Entity } from "./Entity.js";
 import * as QBEntities from "../index/QBEntities.js";
 import * as QBItems from "../index/QBItems.js";
+import Vec2 from "../Vec2.js";
 
 export default class ItemEntity extends Entity {
 	
@@ -42,9 +43,10 @@ export default class ItemEntity extends Entity {
 	
 	tick() {
 		super.tick();
-		let collided = this.layer.getEntities().filter(e => QBEntities.PLAYER.is(e)).find(e => this.collideWithEntity(e));
-		collided?.pickUp(this);
 		if (this.isEmpty()) this.kill();
+		if (this.isOnGround()) {
+			this.setVelocity(new Vec2(this.dx < 0.005 ? 0 : this.dx * 0.95, this.dy));
+		}
 		this.#age++;
 	}
 	

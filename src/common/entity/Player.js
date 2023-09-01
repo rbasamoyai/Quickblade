@@ -3,6 +3,9 @@ import { Monster } from "./Monster.js";
 import { AABB } from "../Collision.js";
 import * as EntityTextures from "./textures/EntityTextures.js";
 import PlayerAppearance from "./PlayerAppearance.js";
+import * as QBItems from "../index/QBItems.js";
+import * as QBEntities from "../index/QBEntities.js";
+
 
 import Vec2 from "../Vec2.js";
 
@@ -34,6 +37,14 @@ export class Player extends Creature {
 		result.runTime = this.#runTime;
 		result.skinColor = this.#appearance.skinColor;
 		result.eyeColor = this.#appearance.eyeColor;
+		
+		result.inventory = [];
+		for (const [item, count] of this.#inventory) {
+			let key = QBItems.getIdKey(item);
+			if (!key) continue;
+			result.inventory.push([key, count]);
+		}
+		
 		return result;
 	}
 	
@@ -43,7 +54,16 @@ export class Player extends Creature {
 		this.#invulnerability = data.invulnerability;
 		this.#runTime = data.runTime;
 		this.#appearance = new PlayerAppearance(data.skinColor, data.eyeColor);
+		
+		this.#inventory = [];
+		for (const [id, count] of data.inventory) {
+			let item = QBItems.getFromIdKey(id);
+			if (!item || count < 1) continue;
+			this.#inventory.push([item, count]);
+		}
 	}
+	
+	get inventory() { return this.#inventory; }
 	
 	isInvulnerable() { return super.isInvulnerable() || this.#invulnerability > 0; }
 	
@@ -90,6 +110,10 @@ export class Player extends Creature {
 		} else {
 			this.#runTime = 0;
 		}
+		
+		this.#inventory = this.#inventory.filter((e, i, arr) => {
+			return e[0] && e[1] > 0;
+		});
 	}
 	
 	canJump() {
@@ -146,6 +170,11 @@ export class Player extends Creature {
 		
 		ctx.restore();
 	}
+
+	pickUpItems() {
+		let collided = this.layer.getEntities().filter(e => QBEntities.ITEM.is(e)).find(e => e.collideWithEntity(this));
+		if (collided) this.pickUp(collided);
+	}
 	
 	pickUp(itemEntity) {
 		if (itemEntity.isEmpty()) return;
@@ -165,14 +194,35 @@ export class Player extends Creature {
 			itemEntity.setItem(item, count - addedCount);
 			count = itemEntity.getItemCount();
 		}
-		if (count > 0 && stacksCountItem < item.maxStacks) {
-			this.#inventory.push([item, count]);
-			itemEntity.setItem(null, 0);
+		let maxSlots = 36;
+		if (count > 0 && (item.maxStacks === -1 || stacksCountItem < item.maxStacks) && this.#inventory.length < maxSlots) {
+			let fillableSlots = maxSlots - this.#inventory.length;
+			if (item.maxStacks !== -1) fillableSlots = Math.min(item.maxStacks, fillableSlots);
+			
+			for (let i = 0; i < fillableSlots; ++i) {
+				count = itemEntity.getItemCount();
+				let maxCount = Math.min(item.stacksTo, count);
+				this.#inventory.push([item, maxCount]);
+				itemEntity.setItem(item, count - maxCount);
+			}
 		}
 		count = itemEntity.getItemCount();
 		if (count !== oldCount) {
 			postMessage?.({ type: "qb:notification", id: this.id, text: `Picked up ${item.name} x${oldCount - count}` });
 		}
+	}
+
+	dropItem(slotIndex, count) {
+		if (slotIndex < 0 || this.#inventory.length <= slotIndex) return;
+		let slot = this.#inventory[slotIndex];
+		count = Math.min(slot[1], count);
+		let itemEntity = QBEntities.ITEM.create(this.pos.x, this.pos.y + 0.25, this.level, this.layer);
+		itemEntity.setItem(slot[0], count);
+		slot[1] -= count;
+		if (slot[1] < 1) this.#inventory.splice(this.#inventory.length, 1);
+		this.level.addTicked(itemEntity, this.layer.depth);
+		this.level.snapshots.push(itemEntity.getLoadSnapshot());
+		this.level.snapshots.push(this.getUpdateSnapshot());
 	}
 	
 }

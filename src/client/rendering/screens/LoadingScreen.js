@@ -1,5 +1,6 @@
 import AbstractScreen from "./AbstractScreen.js";
 import * as TextRenderer from "../TextRenderer.js";
+import * as WidgetTextures from "./widgets/WidgetTextures.js";
 
 export default class LoadingScreen extends AbstractScreen {
 	

@@ -11,7 +11,7 @@ export default class AbstractScreen {
 	render(canvas, ctx, dt) {
 		this.renderBg(canvas, ctx, dt);
 		for (const widget of this.#widgets) {
-			widget.render(canvas, ctx, dt);
+			if (widget.isActive()) widget.render(canvas, ctx, dt);
 		}
 	}
 	
@@ -23,16 +23,22 @@ export default class AbstractScreen {
 		this.#widgets.push(widget);
 	}
 	
+	get widgets() { return this.#widgets; }
+	
 	onMouseMove(mouseX, mouseY, oldMouseX, oldMouseY) {
 		for (const widget of this.#widgets) {
-			widget.setHovered(mouseX, mouseY);
+			if (widget.isActive()) widget.setHovered(mouseX, mouseY);
 		}
 	}
 	
 	onMouseClick(mouseX, mouseY) {
 		for (const widget of this.#widgets) {
-			if (widget.isHovered()) widget.invokeCallback();
+			if (widget.isHovered() && widget.isActive()) widget.invokeCallback();
 		}
+	}
+	
+	onKeyboardInput(code, action) {
+		
 	}
 	
 	close() { this.#closed = true; }

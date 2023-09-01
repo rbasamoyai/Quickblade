@@ -42,6 +42,12 @@ onmessage = evt => {
 			logMessage("Client ready, server starting.");
 			break;
 		}
+		case "qb:drop_item": {
+			if (!serverLevel) break;
+			let entity = serverLevel.getEntityById(evt.data.player);
+			entity?.dropItem(evt.data.slot, evt.data.count);
+			break;
+		}
 	}
 };
 
@@ -80,10 +86,15 @@ async function onLevelGenerate(seed) {
 	
 	let mainLayer = serverLevel.getLayer(0);
 	
-	let item = QBEntities.ITEM.create(4, 0, serverLevel, mainLayer);
-	item.setItem(QBItems.GOLD, 8);
-	serverLevel.addTicked(item, 0);
-	serverLevel.snapshots.push(item.getLoadSnapshot());
+	//for (let i = 0; i < 5; ++i) {
+		let item = QBEntities.ITEM.create(4, 0, serverLevel, mainLayer);
+		//item.setItem(QBItems.GOLD, Math.floor(Math.random() * 75) + 12);
+		item.setItem(QBItems.GOLD, 9999);
+		let dx = Math.random() * 0.05 - 0.025;
+		item.setVelocity(new Vec2(dx, 0));
+		serverLevel.addTicked(item, 0);
+		serverLevel.snapshots.push(item.getLoadSnapshot());
+	//}
 	
 	//let otherEntity = QBEntities.IMP.create(4, 2, serverLevel, mainLayer);
 	//serverLevel.addTicked(otherEntity, 0);
@@ -107,9 +118,11 @@ function initController(appearance) {
 
 function mainloop() {
 	let startMs = Date.now();
-	if (serverLevel && clientReady && !serverLevel.isPaused()) {
-		input.tick();
-		serverLevel.tick();
+	if (serverLevel && clientReady) {
+		if (!serverLevel.isPaused()) {
+			input.tick();
+			serverLevel.tick();
+		}
 		postMessage({
 			type: "qb:update_client",
 			time: Date.now(),

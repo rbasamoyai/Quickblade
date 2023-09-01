@@ -27,6 +27,7 @@ import * as TextRenderer from "./rendering/TextRenderer.js";
 import Camera from "./rendering/Camera.js";
 import QBRandom from "../common/QBRandom.js";
 import { Creature } from "../common/entity/Creature.js";
+import { Player } from "../common/entity/Player.js";
 
 import * as QBEntities from "../common/index/QBEntities.js";
 import * as QBTiles from "../common/index/QBTiles.js";
@@ -44,6 +45,7 @@ import CreditsScreen from "./rendering/screens/CreditsScreen.js";
 import PlayerAppearanceScreen from "./rendering/screens/PlayerAppearanceScreen.js";
 import LoadingScreen from "./rendering/screens/LoadingScreen.js";
 import DeathScreen from "./rendering/screens/DeathScreen.js";
+import InventoryScreen from "./rendering/screens/InventoryScreen.js";
 
 import PlayerAppearance from "../common/entity/PlayerAppearance.js";
 
@@ -242,7 +244,7 @@ function mainRender() {
 		clientLevel.render(ctx, dt, SNAP_SCALE);	
 		ctx.restore();
 		
-		if (tracked && !currentScreen) {
+		if (tracked && inputMode === "jump" && !currentScreen) {
 			ctx.strokeStyle = "#FFFF00";
 			ctx.globalAlpha = 1;
 			ctx.lineWidth = 0.125;
@@ -258,22 +260,18 @@ function mainRender() {
 			ctx.beginPath();
 			ctx.moveTo(0, 0);
 			ctx.lineTo(dmx, dmy);
-			
 			ctx.stroke();
-			
 			ctx.restore();
-		}
-		
-		ctx.save();
-		ctx.translate(mouseX * 16, mouseY * -15 + 15);
-		if (inputMode === "jump") {
+			
+			ctx.save();
+			ctx.translate(mouseX * 16, mouseY * -15 + 15);
 			ctx.fillStyle = "#00FF00";
 			ctx.globalAlpha = 0.2;
 			ctx.beginPath();
 			ctx.arc(0, 0, 1, 0, 2 * Math.PI);
 			ctx.fill();
+			ctx.restore();
 		}
-		ctx.restore();
 		
 		ctx.restore();
 		
@@ -294,7 +292,7 @@ function mainRender() {
 		}
 	}
 	
-	if (notificationQueue.length > 0) {
+	if (!currentScreen && notificationQueue.length > 0) {
 		let notif = notificationQueue[0];
 		let extraText = Math.max(notif.length - 22, 0);
 		let textScrollTime = extraText * 250;
@@ -361,19 +359,35 @@ function updateCamera(id) {
 function isControlling() { return controlledEntity || controlledEntity == 0; }
 
 document.onkeydown = evt => {
-	if (evt.code === "KeyA") inputFlags |= 1; // Left
-	if (evt.code === "KeyD") inputFlags |= 2; // Right
-	if (evt.code === "KeyW") inputFlags |= 4; // Up
-	if (evt.code === "KeyS") inputFlags |= 8; // Down
-	updateKbInput();
+	if (currentScreen) {
+		currentScreen.onKeyboardInput(evt.code, 1);
+	} else {
+		if (evt.code === "KeyA") inputFlags |= 1; // Left
+		if (evt.code === "KeyD") inputFlags |= 2; // Right
+		if (evt.code === "KeyW") inputFlags |= 4; // Up
+		if (evt.code === "KeyS") inputFlags |= 8; // Down
+		if (evt.code === "KeyC") inputFlags |= 16; // Interact
+		updateKbInput();
+	}
+	
+	if (evt.code === "KeyF" && clientLevel && tracked instanceof Player && !currentScreen) {
+		inputFlags = 0;
+		updateKbInput();
+		setScreen(new InventoryScreen(tracked, msg => worker.postMessage(msg)));
+	}
 };
 
 document.onkeyup = evt => {
-	if (evt.code === "KeyA") inputFlags &= ~1; // Left
-	if (evt.code === "KeyD") inputFlags &= ~2; // Right
-	if (evt.code === "KeyW") inputFlags &= ~4; // Up
-	if (evt.code === "KeyS") inputFlags &= ~8; // Down
-	updateKbInput();
+	if (currentScreen) {
+		currentScreen.onKeyboardInput(evt.code, 0);
+	} else {
+		if (evt.code === "KeyA") inputFlags &= ~1; // Left
+		if (evt.code === "KeyD") inputFlags &= ~2; // Right
+		if (evt.code === "KeyW") inputFlags &= ~4; // Up
+		if (evt.code === "KeyS") inputFlags &= ~8; // Down
+		if (evt.code === "KeyC") inputFlags &= ~16; // Interact
+		updateKbInput();
+	}
 };
 
 document.oncontextmenu = evt => {

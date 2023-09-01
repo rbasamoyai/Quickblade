@@ -1,4 +1,6 @@
 import { ImageResource } from "../resource_management/ResourceLoading.js";
+import * as WidgetTextures from "../../client/rendering/screens/widgets/WidgetTextures.js";
+import * as TextRenderer from "../../client/rendering/TextRenderer.js";
 
 export class Item extends ImageResource {
 
@@ -23,6 +25,20 @@ export class Item extends ImageResource {
 		let frame = Math.floor((timeElapsed + dt) / this.#frameSpeed % this.#frameCount);
 		ctx.imageSmoothingEnabled = false;
 		ctx.drawImage(this.imageResource, frame * this.#textureSize, 0, this.#textureSize, this.#textureSize, 0, 0, this.#textureSize, this.#textureSize);
+	}
+
+	renderSubmenu(ctx, dt, timeElapsed) {
+		let tw = Math.ceil(this.#textureSize / 16);
+		WidgetTextures.WINDOW.render(ctx, -8, -8, 16, tw + 4);
+		this.render(ctx, dt, timeElapsed);
+		WidgetTextures.TEXT.render(ctx, this.#name, 0, this.#textureSize, TextRenderer.LEFT_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
+	}
+
+	getSubmenuActions(player, itemCount, screen, messageCallback) {
+		return [new SubmenuAction("Drop", () => {
+			screen.openDropMenu.bind(screen);
+			screen.openDropMenu();
+		})];
 	}
 	
 	get stacksTo() { return this.#stacksTo; }
@@ -75,5 +91,20 @@ export class ItemProperties {
 	unlimitedStacks() {
 		return this.maxStacks(-1);
 	}
+	
+}
+
+class SubmenuAction {
+
+	#name;
+	#callback;
+
+	constructor(name, callback) {
+		this.#name = name;
+		this.#callback = callback;
+	}
+
+	get name() { return this.#name; }
+	run() { this.#callback(); }
 	
 }

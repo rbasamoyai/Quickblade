@@ -10,6 +10,7 @@ export default class Widget {
 	#clickCallback;
 	
 	#isHovered;
+	#isActive = true;
 
 	constructor(screen, x, y, width, height, clickCallback, regularTex, hoverTex) {
 		this.#screen = screen;
@@ -22,7 +23,7 @@ export default class Widget {
 		this.#hoverTex = hoverTex ? hoverTex : regularTex;
 	}
 	
-	render(canvas, ctx, dt) {
+	render(ctx, dt) {
 		ctx.drawImage(this.#isHovered ? this.#hoverTex.imageResource : this.#regularTex.imageResource, this.#x, this.#y);
 	}
 	
@@ -44,5 +45,8 @@ export default class Widget {
 	get height() { return this.#height; }
 	
 	get screen() { return this.#screen; }
+	
+	isActive() { return this.#isActive; }
+	setActive(v) { this.#isActive = v; }
 
 }

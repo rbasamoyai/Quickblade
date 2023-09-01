@@ -26,7 +26,7 @@ export default class Button extends Widget {
 		this.#textColor = textColor;
 	}
 	
-	render(canvas, ctx, dt) {
+	render(ctx, dt) {
 		if (this.isHovered()) {
 			this.#hoverBox?.render(ctx, this.x, this.y, this.#tileWidth, this.#tileHeight);
 		} else {
