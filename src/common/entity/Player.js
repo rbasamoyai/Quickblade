@@ -102,8 +102,10 @@ export class Player extends Creature {
 			}
 		}
 		
-		if (this.isOnGround() && Math.abs(this.dx) > 0.01) {
-			++this.#runTime;
+		let adx = Math.abs(this.dx);
+		if (this.isOnGround() && adx > 0.01) {
+			if (this.#runTime < 1) this.#runTime = 1;
+			this.#runTime += adx;
 			if (this.#runTime > 6) {
 				this.#runTime = 1;
 			}
@@ -150,7 +152,7 @@ export class Player extends Creature {
 		let ax = 0;
 		let ay = 0;
 		if (this.isOnGround() && this.#runTime > 0) {
-			ax = 32 * Math.min(this.#runTime, 6);
+			ax = 32 * Math.min(Math.floor(this.#runTime), 6);
 		} else if (!this.isOnGround()) {
 			ax = 224;
 		}
