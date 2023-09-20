@@ -221,7 +221,7 @@ export class Player extends Creature {
 		let itemEntity = QBEntities.ITEM.create(this.pos.x, this.pos.y + 0.25, this.level, this.layer);
 		itemEntity.setItem(slot[0], count);
 		slot[1] -= count;
-		if (slot[1] < 1) this.#inventory.splice(this.#inventory.length, 1);
+		if (slot[1] < 1) this.#inventory.splice(slotIndex, 1);
 		this.level.addTicked(itemEntity, this.layer.depth);
 		this.level.snapshots.push(itemEntity.getLoadSnapshot());
 		this.level.snapshots.push(this.getUpdateSnapshot());

@@ -37,7 +37,7 @@ export default class AbstractScreen {
 		}
 	}
 	
-	onKeyboardInput(code, action) {
+	onKeyboardInput(code, action, controls) {
 		
 	}
 	

@@ -17,6 +17,7 @@ const SNAP_SCALE = 16;
 const SCREEN_WIDTH = 256;
 const SCREEN_HEIGHT = 224;
 let RENDER_DEBUG_INFO = false;
+let CONTROLLER = -1;
 
 import Level from "../common/level/Level.js";
 import { LevelChunk } from "../common/level/LevelChunk.js";
@@ -48,6 +49,9 @@ import DeathScreen from "./rendering/screens/DeathScreen.js";
 import InventoryScreen from "./rendering/screens/InventoryScreen.js";
 
 import PlayerAppearance from "../common/entity/PlayerAppearance.js";
+
+import ControlMapping from "./input/ControlMapping.js";
+import ControlOptions from "./input/ControlOptions.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -222,6 +226,8 @@ function trySettingReady() {
 }
 
 function mainRender() {
+	updateController();
+	
 	let curMs = Date.now();
 	let dt = (curMs - lastTickMs) * TICK_DT;
 	if (dt > 1) dt = 1;
@@ -358,19 +364,37 @@ function updateCamera(id) {
 
 function isControlling() { return controlledEntity || controlledEntity == 0; }
 
+//////// Mouse and keyboard input ////////
+
+// TODO: load cookies
+let KEY_CONTROLS = new ControlOptions(
+	new ControlMapping("KeyA"), // Move Left
+	new ControlMapping("KeyD"), // Move Right
+	new ControlMapping("KeyW"), // Move Up
+	new ControlMapping("KeyS"), // Move Down
+	new ControlMapping("KeyC"), // Interact/Select
+	new ControlMapping("KeyV"), // Jump Mode/Back
+	new ControlMapping("KeyF") // Inventory
+);
+
+let PRESSED_KEYS = {};
+
 document.onkeydown = evt => {
+	if (PRESSED_KEYS[evt.code]) return;
+	PRESSED_KEYS[evt.code] = true;
+	
 	if (currentScreen) {
-		currentScreen.onKeyboardInput(evt.code, 1);
-	} else {
-		if (evt.code === "KeyA") inputFlags |= 1; // Left
-		if (evt.code === "KeyD") inputFlags |= 2; // Right
-		if (evt.code === "KeyW") inputFlags |= 4; // Up
-		if (evt.code === "KeyS") inputFlags |= 8; // Down
-		if (evt.code === "KeyC") inputFlags |= 16; // Interact
+		currentScreen.onKeyboardInput(evt.code, 1, KEY_CONTROLS);
+	} else if (!isUsingGamepad()) {
+		if (evt.code === KEY_CONTROLS.moveLeft.currentKey) inputFlags |= 1;
+		if (evt.code === KEY_CONTROLS.moveRight.currentKey) inputFlags |= 2;
+		if (evt.code === KEY_CONTROLS.moveUp.currentKey) inputFlags |= 4;
+		if (evt.code === KEY_CONTROLS.moveDown.currentKey) inputFlags |= 8;
+		if (evt.code === KEY_CONTROLS.interactSelect.currentKey) inputFlags |= 16;
 		updateKbInput();
 	}
 	
-	if (evt.code === "KeyF" && clientLevel && tracked instanceof Player && !currentScreen) {
+	if (evt.code === KEY_CONTROLS.inventory.currentKey && clientLevel && tracked instanceof Player && !currentScreen) {
 		inputFlags = 0;
 		updateKbInput();
 		setScreen(new InventoryScreen(tracked, msg => worker.postMessage(msg)));
@@ -378,14 +402,17 @@ document.onkeydown = evt => {
 };
 
 document.onkeyup = evt => {
+	if (!PRESSED_KEYS[evt.code]) return;
+	delete PRESSED_KEYS[evt.code];
+	
 	if (currentScreen) {
-		currentScreen.onKeyboardInput(evt.code, 0);
-	} else {
-		if (evt.code === "KeyA") inputFlags &= ~1; // Left
-		if (evt.code === "KeyD") inputFlags &= ~2; // Right
-		if (evt.code === "KeyW") inputFlags &= ~4; // Up
-		if (evt.code === "KeyS") inputFlags &= ~8; // Down
-		if (evt.code === "KeyC") inputFlags &= ~16; // Interact
+		currentScreen.onKeyboardInput(evt.code, 0, KEY_CONTROLS);
+	} else if (!isUsingGamepad()) {
+		if (evt.code === KEY_CONTROLS.moveLeft.currentKey) inputFlags &= ~1;
+		if (evt.code === KEY_CONTROLS.moveRight.currentKey) inputFlags &= ~2;
+		if (evt.code === KEY_CONTROLS.moveUp.currentKey) inputFlags &= ~4;
+		if (evt.code === KEY_CONTROLS.moveDown.currentKey) inputFlags &= ~8;
+		if (evt.code === KEY_CONTROLS.interactSelect.currentKey) inputFlags &= ~16;
 		updateKbInput();
 	}
 };
@@ -415,7 +442,7 @@ canvas.oncontextmenu = evt => {
 canvas.onclick = evt => {
 	if (currentScreen) {
 		currentScreen.onMouseClick(mouseX, mouseY);
-	} else if (inputMode === "jump" && clientLevel && camera && tracked) {
+	} else if (inputMode === "jump" && clientLevel && camera && tracked && !isUsingGamepad()) {
 		let ds = tracked.displacement(0);
 		let inputVec = [camera.x - ds.x + mouseX * 16 - 8, camera.y - ds.y + mouseY * -15 + 8];
 		worker.postMessage({
@@ -424,5 +451,100 @@ canvas.onclick = evt => {
 		});
 	}
 };
+
+//////// Controller support ////////
+
+// TODO: load button from cookies
+let GAMEPAD_CONTROLS = new ControlOptions(
+	new ControlMapping(14), // Move Left
+	new ControlMapping(15), // Move Right
+	new ControlMapping(12), // Move Up
+	new ControlMapping(13), // Move Down
+	new ControlMapping(0), // Interact/Select
+	new ControlMapping(1), // Jump Mode/Back
+	new ControlMapping(2), // Inventory
+	new ControlMapping(4), // Quick Swap Previous Weapon
+	new ControlMapping(5), // Quick Swap Next Weapon
+);
+
+let PREVIOUS_GAMEPAD_INPUTS = [];
+
+window.addEventListener("gamepadconnected", evt => {
+	if (isUsingGamepad()) return;
+	CONTROLLER = evt.gamepad.index;
+	PREVIOUS_GAMEPAD_INPUTS = [];
+	PRESSED_KEYS = {};
+	logMessage(`Connected gamepad with index ${evt.gamepad.index}: ${evt.gamepad.id}`);
+
+	if (currentScreen) {
+		let sz = evt.gamepad.buttons.length;
+		for (let i = 0; i < sz; ++i) {
+			currentScreen.onKeyboardInput(i, 0, GAMEPAD_CONTROLS);
+		}
+	}
+	inputFlags = 0;
+	updateKbInput();
+});
+
+window.addEventListener("gamepaddisconnected", evt => {
+	if (!isUsingGamepad()) return;
+	CONTROLLER = -1;
+	PREVIOUS_GAMEPAD_INPUTS = [];
+	PRESSED_KEYS = {};
+	logMessage(`Disconnected gamepad with index ${evt.gamepad.index}: ${evt.gamepad.id}`);
+
+	if (currentScreen) {
+		let sz = evt.gamepad.buttons.length;
+		for (let i = 0; i < sz; ++i) {
+			currentScreen.onKeyboardInput(i, 0, GAMEPAD_CONTROLS);
+		}
+	}
+	inputFlags = 0;
+	updateKbInput();
+});
+
+function updateController() {
+	let gamepad = getGamepad();
+	if (!gamepad || !gamepad.connected) return;
+
+	for (const [index, button] of gamepad.buttons.entries()) {
+		if (index >= PREVIOUS_GAMEPAD_INPUTS.length) PREVIOUS_GAMEPAD_INPUTS.push(button.pressed);
+		if (PREVIOUS_GAMEPAD_INPUTS[index] === button.pressed) continue;
+		PREVIOUS_GAMEPAD_INPUTS[index] = button.pressed;
+		
+		currentScreen?.onKeyboardInput(index, button.pressed ? 1 : 0, GAMEPAD_CONTROLS);
+
+		if (index === GAMEPAD_CONTROLS.inventory.currentKey && button.pressed && clientLevel && tracked instanceof Player && !currentScreen) {
+			inputFlags = 0;
+			updateKbInput();
+			setScreen(new InventoryScreen(tracked, msg => worker.postMessage(msg)));
+		}
+	}
+	
+	if (!currentScreen) {
+		let newFlags = 0;
+		if (getButton(gamepad, GAMEPAD_CONTROLS.moveLeft.currentKey)?.pressed) newFlags |= 1;
+		if (getButton(gamepad, GAMEPAD_CONTROLS.moveRight.currentKey)?.pressed) newFlags |= 2;
+		if (getButton(gamepad, GAMEPAD_CONTROLS.moveUp.currentKey)?.pressed) newFlags |= 4;
+		if (getButton(gamepad, GAMEPAD_CONTROLS.moveDown.currentKey)?.pressed) newFlags |= 8;
+		if (getButton(gamepad, GAMEPAD_CONTROLS.interactSelect.currentKey)?.pressed) newFlags |= 16;
+		if (inputFlags !== newFlags) {
+			inputFlags = newFlags;
+			updateKbInput();
+		}
+	}
+}
+
+function isUsingGamepad() {
+	return 0 <= CONTROLLER && CONTROLLER < window.navigator.getGamepads().length;
+}
+
+function getGamepad() {
+	return isUsingGamepad() ? window.navigator.getGamepads()[CONTROLLER] : null;
+}
+
+function getButton(gamepad, i) {
+	return Number.isInteger(i) && 0 <= i && i < gamepad.buttons.length ? gamepad.buttons[i] : null;
+}
 
 window.requestAnimationFrame(mainRender);

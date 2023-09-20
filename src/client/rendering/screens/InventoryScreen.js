@@ -19,6 +19,8 @@ export default class InventoryScreen extends AbstractScreen {
 	#itemMenuTimer = 0;
 	#dropMenuOpen = 0;
 	#dropAmount = 1;
+	#dropSpeed = 1;
+	#accDrops = 0;
 	
 	#prevTime;
 	#baseIndex = 0;
@@ -47,22 +49,32 @@ export default class InventoryScreen extends AbstractScreen {
 		let inventory = this.#player.inventory;
 		
 		if (this.#scrollUp !== this.#scrollDown) {
-			let d = this.#scrollUp ? -1 : 1;
-			let advTimeMs = this.#repeatScroll ? 250 : 750;
-			this.#keyTimer += frameDelta;
-			if (this.#keyTimer >= advTimeMs) {
-				this.#repeatScroll = true;
-				this.#keyTimer = 0;
-				if (this.#dropMenuOpen && 0 <= this.#currentIndex && this.#currentIndex < inventory.length) {
-					let slot = inventory[this.#currentIndex];
-					let minCount = Math.min(slot[0].stacksTo, slot[1]);
+			if (this.#dropMenuOpen && 0 <= this.#currentIndex && this.#currentIndex < inventory.length) {
+				let slot = inventory[this.#currentIndex];
+				let minCount = Math.min(slot[0].stacksTo, slot[1]);
+				let advTimeMs = this.#repeatScroll ? 5 : 750; // Frame limited to 1 / 60th of a second
+				let d = this.#scrollUp ? this.#dropSpeed : -this.#dropSpeed;
+				if (this.#keyTimer >= advTimeMs) {
+					this.#repeatScroll = true;
+					this.#keyTimer = 0;
 					this.#dropAmount = clamp(this.#dropAmount + d, 1, minCount);
-				} else if (!this.#submenuOpen) {
+					++this.#accDrops;
+					if (this.#accDrops >= 100 && this.#dropSpeed < 10) this.#dropSpeed *= 10;
+				}
+			} else if (!this.#submenuOpen) {
+				let d = this.#scrollUp ? -1 : 1;
+				let advTimeMs = this.#repeatScroll ? 250 : 750;
+				if (this.#keyTimer >= advTimeMs) {
+					this.#repeatScroll = true;
+					this.#keyTimer = 0;
 					this.#changeIndex(this.#currentIndex + d);
 				}
 			}
+			this.#keyTimer += frameDelta;
 		} else {
 			this.#keyTimer = 0;
+			this.#dropSpeed = 1;
+			this.#accDrops = 0;
 		}
 		
 		WidgetTextures.TEXT.render(ctx, "Inventory", 56, 40, TextRenderer.CENTER_ALIGN, 1, WidgetTextures.ROMAN_YELLOW);
@@ -94,6 +106,8 @@ export default class InventoryScreen extends AbstractScreen {
 			this.#submenuIndex = 0;
 			this.#submenuOpen = false;
 			this.#dropAmount = 1;
+			this.#dropSpeed = 1;
+			this.#accDrops = 0;
 			this.#dropMenuOpen = false;
 		} else {
 			let item = inventory[this.#currentIndex][0];
@@ -130,8 +144,8 @@ export default class InventoryScreen extends AbstractScreen {
 		}
 	}
 	
-	onKeyboardInput(code, action) {
-		if (code === "KeyF" && action === 1) {
+	onKeyboardInput(code, action, controls) {
+		if (code === controls.inventory.currentKey && action === 1) {
 			this.close();
 		}
 
@@ -139,7 +153,7 @@ export default class InventoryScreen extends AbstractScreen {
 		let slot = 0 <= this.#currentIndex && this.#currentIndex < inventory.length ? inventory[this.#currentIndex] : null;
 		let actions = slot ? slot[0].getSubmenuActions(this.#player, slot[1], this, this.#messageCallback) : [];
 		
-		if (code === "KeyW") {
+		if (code === controls.moveUp.currentKey) {
 			this.#scrollUp = action === 1;
 			this.#keyTimer = 0;
 			this.#repeatScroll = false;
@@ -154,7 +168,7 @@ export default class InventoryScreen extends AbstractScreen {
 				}
 			}
 		}
-		if (code === "KeyS") {
+		if (code === controls.moveDown.currentKey) {
 			this.#scrollDown = action === 1;
 			this.#keyTimer = 0;
 			this.#repeatScroll = false;
@@ -170,28 +184,34 @@ export default class InventoryScreen extends AbstractScreen {
 			}
 		}
 		if (this.#dropMenuOpen) {
-			if (code === "KeyC" && action === 1) {
+			if (code === controls.interactSelect.currentKey && action === 1) {
 				this.#messageCallback({ type: "qb:drop_item", player: this.#player.id, slot: this.#currentIndex, count: this.#dropAmount });
 				this.#dropAmount = 1;
+				this.#dropSpeed = 1;
+				this.#accDrops = 0;
 				this.#dropMenuOpen = false;
 			}
-			if (code === "KeyV" && action === 1) {
+			if (code === controls.jumpModeBack.currentKey && action === 1) {
 				this.#dropAmount = 1;
+				this.#dropSpeed = 1;
+				this.#accDrops = 0;
 				this.#dropMenuOpen = false;
 			}
 		} else if (this.#submenuOpen) {
-			if (code === "KeyC" && action === 1) {
+			if (code === controls.interactSelect.currentKey && action === 1) {
 				if (0 <= this.#submenuIndex && this.#submenuIndex < actions.length) {
 					actions[this.#submenuIndex].run();
 				}
 			}
-			if (code === "KeyV" && action === 1) {
+			if (code === controls.jumpModeBack.currentKey && action === 1) {
 				this.#submenuIndex = 0;
 				this.#submenuOpen = false;
 				this.#dropAmount = 1;
+				this.#dropSpeed = 1;
+				this.#accDrops = 0;
 				this.#dropMenuOpen = false;
 			}
-		} else if (code === "KeyC" && action === 1) {
+		} else if (code === controls.interactSelect.currentKey && action === 1) {
 			this.#submenuOpen = true;
 		}
 	}

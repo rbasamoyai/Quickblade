@@ -29,4 +29,4 @@ export function getIdNum(item) {
 	return ITEMS_BY_ID.indexOf(item);
 }
 
-export const GOLD = register("qb:gold", Item, new ItemProperties("item/gold", "Gold").stacksTo(9999).maxStacks(1).frameCount(12).frameSpeed(3.75));
+export const GOLD = register("qb:gold", Item, new ItemProperties("item/gold", "Gold").stacksTo(1000).maxStacks(-1).frameCount(12).frameSpeed(3.75));
